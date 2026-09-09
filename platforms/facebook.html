@@ -5,52 +5,115 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Facebook Live — GoLive</title>
   <link rel="stylesheet" href="../assets/css/base.css" />
-  <link rel="stylesheet" href="../assets/css/stream-stub.css" />
+  <link rel="stylesheet" href="../assets/css/facebook.css" />
+  <link rel="icon" href="data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%2032%2032'%3E%3Crect%20width='32'%20height='32'%20rx='7'%20fill='%231877f2'/%3E%3Ccircle%20cx='16'%20cy='16'%20r='6'%20fill='%23fa383e'/%3E%3C/svg%3E" />
   <!--
-    ============================================================
-    Facebook Live — BUILD YOUR PLATFORM LOOK HERE
-    ------------------------------------------------------------
-    This is a working starter: the camera turns on and the
-    username / streamer name are wired up. Your job is to make
-    everything below LOOK like Facebook Live.
-
-    You own these files ONLY (no merge conflicts with others):
-      platforms/facebook.html
-      assets/js/platforms/facebook.js
-      assets/css/facebook.css   (create this and link it above)
-
-    Read data with:  const s = GoLive.session();
-                      s.username, s.streamer, s.platform
-    Start the cam:   GoLive.startCamera(videoEl)
-    See assets/js/platforms/facebook.js for the wiring.
-    ============================================================
+    Facebook Live look for GoLive Studio. Built to the spec in
+    platforms/facebook.spec.md. Owns only: this file,
+    assets/js/platforms/facebook.js, assets/css/facebook.css.
+    Comment data comes from the shared chat bank (GoLive.chat) via an
+    adapter in facebook.js; a local pool is used until the bank ships.
   -->
 </head>
-<body>
-  <main class="stub">
-    <header class="stub__bar">
-      <span class="dot"></span>
-      <span class="stub__live">LIVE</span>
-      <span class="stub__platform" data-platform-name>Facebook Live</span>
-      <span class="stub__timer" data-timer>00:00</span>
+<body class="fb">
+  <main class="fb-stage">
+    <!-- Live webcam feed -->
+    <video class="fb-video" data-camera autoplay muted playsinline></video>
+    <div class="fb-camera-error" data-camera-error hidden>
+      <span>Camera unavailable. Allow camera access and reload.</span>
+    </div>
+
+    <!-- Top-left live status -->
+    <div class="fb-status">
+      <span class="fb-live-pill">
+        <span class="fb-live-dot"></span>LIVE
+      </span>
+      <span class="fb-viewers">
+        <svg viewBox="0 0 24 24" aria-hidden="true" class="fb-eye">
+          <path d="M12 5c-5 0-9 4.5-10 7 1 2.5 5 7 10 7s9-4.5 10-7c-1-2.5-5-7-10-7z"
+                fill="none" stroke="currentColor" stroke-width="2"/>
+          <circle cx="12" cy="12" r="3" fill="currentColor"/>
+        </svg>
+        <span data-viewers>0</span> watching
+      </span>
+      <span class="fb-likes" data-likes-pill hidden>
+        <span class="fb-likes-emoji">❤️</span><span data-likes>0</span>
+      </span>
+    </div>
+
+    <!-- Top identity bar -->
+    <header class="fb-topbar">
+      <div class="fb-avatar" data-avatar data-avatar-for="streamer">S</div>
+      <div class="fb-ident">
+        <strong class="fb-name" data-streamer>Streamer</strong>
+        <span class="fb-sub">
+          <span data-username>@username</span>
+          <span class="fb-dot-sep">·</span>
+          started <span data-timer>00:00</span>
+        </span>
+      </div>
+      <button type="button" class="fb-follow" data-follow>
+        <svg viewBox="0 0 24 24" aria-hidden="true" width="16" height="16">
+          <path d="M12 5v14M5 12h14" stroke="currentColor" stroke-width="2.4"
+                stroke-linecap="round"/>
+        </svg>
+        Follow
+      </button>
     </header>
 
-    <section class="stub__stage">
-      <div class="stub__video-wrap">
-        <video data-camera autoplay muted playsinline></video>
-        <div class="stub__overlay">
-          <strong data-streamer>Streamer</strong>
-          <span data-username>@username</span>
-        </div>
-        <div class="stub__camera-error" data-camera-error>
-          Camera unavailable. Allow camera access and reload.
-        </div>
-      </div>
+    <!-- Live comments -->
+    <section class="fb-comments" aria-label="Live comments">
+      <ul class="fb-comment-list" data-comments></ul>
     </section>
 
-    <footer class="stub__todo">
-      TODO: replace this placeholder with the real Facebook Live interface —
-      edit <code>platforms/facebook.html</code> and <code>assets/css/facebook.css</code>.
+    <!-- Floating reactions rise here -->
+    <div class="fb-reaction-lane" data-reaction-lane aria-hidden="true"></div>
+
+    <!-- Composer + action bar -->
+    <footer class="fb-bottom">
+      <form class="fb-composer" data-composer>
+        <div class="fb-avatar fb-avatar--sm" data-avatar data-avatar-for="user">U</div>
+        <input type="text" class="fb-composer-input" data-comment-input
+               autocomplete="off" placeholder="Comment as @you" maxlength="140" />
+        <button type="submit" class="fb-send" aria-label="Send comment">
+          <svg viewBox="0 0 24 24" aria-hidden="true" width="20" height="20">
+            <path d="M2 21l21-9L2 3v7l15 2-15 2v7z" fill="currentColor"/>
+          </svg>
+        </button>
+      </form>
+
+      <div class="fb-actionbar">
+        <div class="fb-like-wrap">
+          <button type="button" class="fb-action" data-like
+                  aria-haspopup="true" aria-pressed="false">
+            <span class="fb-action-emoji" data-like-emoji>👍</span>
+            <span data-like-label>Like</span>
+          </button>
+          <div class="fb-reaction-picker" data-picker role="group" aria-label="Pick a reaction">
+            <button type="button" data-reaction="👍" data-label="Like" aria-label="Like">👍</button>
+            <button type="button" data-reaction="❤️" data-label="Love" aria-label="Love">❤️</button>
+            <button type="button" data-reaction="😆" data-label="Haha" aria-label="Haha">😆</button>
+            <button type="button" data-reaction="😮" data-label="Wow" aria-label="Wow">😮</button>
+            <button type="button" data-reaction="😢" data-label="Sad" aria-label="Sad">😢</button>
+            <button type="button" data-reaction="😡" data-label="Angry" aria-label="Angry">😡</button>
+          </div>
+        </div>
+        <button type="button" class="fb-action" data-comment-focus>
+          <svg viewBox="0 0 24 24" aria-hidden="true" width="20" height="20">
+            <path d="M21 12a8 8 0 0 1-11.5 7.2L4 20l1-4.6A8 8 0 1 1 21 12z"
+                  fill="none" stroke="currentColor" stroke-width="2"/>
+          </svg>
+          Comment
+        </button>
+        <button type="button" class="fb-action" data-share>
+          <svg viewBox="0 0 24 24" aria-hidden="true" width="20" height="20">
+            <path d="M4 12v7a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1v-7M12 3v13M7 8l5-5 5 5"
+                  fill="none" stroke="currentColor" stroke-width="2"
+                  stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+          Share
+        </button>
+      </div>
     </footer>
   </main>
 

@@ -2,57 +2,90 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Instagram Live — GoLive</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <title>Instagram Live</title>
   <link rel="stylesheet" href="../assets/css/base.css" />
-  <link rel="stylesheet" href="../assets/css/stream-stub.css" />
-  <!--
-    ============================================================
-    Instagram Live — BUILD YOUR PLATFORM LOOK HERE
-    ------------------------------------------------------------
-    This is a working starter: the camera turns on and the
-    username / streamer name are wired up. Your job is to make
-    everything below LOOK like Instagram Live.
-
-    You own these files ONLY (no merge conflicts with others):
-      platforms/instagram.html
-      assets/js/platforms/instagram.js
-      assets/css/instagram.css   (create this and link it above)
-
-    Read data with:  const s = GoLive.session();
-                      s.username, s.streamer, s.platform
-    Start the cam:   GoLive.startCamera(videoEl)
-    See assets/js/platforms/instagram.js for the wiring.
-    ============================================================
-  -->
+  <link rel="stylesheet" href="../assets/css/instagram.css" />
 </head>
 <body>
-  <main class="stub">
-    <header class="stub__bar">
-      <span class="dot"></span>
-      <span class="stub__live">LIVE</span>
-      <span class="stub__platform" data-platform-name>Instagram Live</span>
-      <span class="stub__timer" data-timer>00:00</span>
+  <div class="ig-shell">
+
+    <!-- Full-screen camera feed -->
+    <video class="ig-video" data-camera autoplay muted playsinline></video>
+
+    <!-- Camera unavailable state -->
+    <div class="ig-camera-error" data-camera-error>
+      <span>Camera unavailable.<br>Allow camera access and reload.</span>
+    </div>
+
+    <!-- Readability gradients -->
+    <div class="ig-gradient ig-gradient--top"></div>
+    <div class="ig-gradient ig-gradient--bottom"></div>
+
+    <!-- TOP BAR -->
+    <header class="ig-top">
+      <button class="ig-back" id="ig-back" aria-label="Close stream">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
+          <path d="M18 6L6 18M6 6l12 12" stroke="white" stroke-width="2.5" stroke-linecap="round"/>
+        </svg>
+      </button>
+
+      <div class="ig-identity">
+        <div class="ig-avatar" data-avatar></div>
+        <div class="ig-names">
+          <span class="ig-streamer" data-streamer>Streamer</span>
+          <span class="ig-handle" data-username>@username</span>
+        </div>
+        <div class="ig-live-badge">LIVE</div>
+      </div>
+
+      <div class="ig-meta">
+        <span class="ig-viewers" data-viewers>0</span>
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none">
+          <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" stroke="white" stroke-width="2"/>
+          <circle cx="12" cy="12" r="3" stroke="white" stroke-width="2"/>
+        </svg>
+        <span class="ig-timer" data-timer>00:00</span>
+      </div>
     </header>
 
-    <section class="stub__stage">
-      <div class="stub__video-wrap">
-        <video data-camera autoplay muted playsinline></video>
-        <div class="stub__overlay">
-          <strong data-streamer>Streamer</strong>
-          <span data-username>@username</span>
-        </div>
-        <div class="stub__camera-error" data-camera-error>
-          Camera unavailable. Allow camera access and reload.
-        </div>
-      </div>
-    </section>
+    <!-- LIVE COMMENTS -->
+    <section class="ig-comments" id="ig-comments" aria-live="polite" aria-label="Live comments"></section>
 
-    <footer class="stub__todo">
-      TODO: replace this placeholder with the real Instagram Live interface —
-      edit <code>platforms/instagram.html</code> and <code>assets/css/instagram.css</code>.
+    <!-- RIGHT: HEART BUTTON -->
+    <aside class="ig-actions">
+      <button class="ig-heart-btn" id="ig-heart-btn" aria-label="React with heart">
+        <svg width="28" height="28" viewBox="0 0 24 24" fill="none">
+          <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"
+                stroke="white" stroke-width="2" stroke-linejoin="round"/>
+        </svg>
+        <span class="ig-heart-count" id="ig-heart-count">0</span>
+      </button>
+    </aside>
+
+    <!-- Floating hearts land here -->
+    <div class="ig-hearts-stage" id="ig-hearts-stage" aria-hidden="true"></div>
+
+    <!-- BOTTOM: COMMENT INPUT -->
+    <footer class="ig-bottom">
+      <div class="ig-comment-row">
+        <input
+          class="ig-comment-input"
+          id="ig-comment-input"
+          type="text"
+          placeholder="Add a comment…"
+          maxlength="200"
+          autocomplete="off"
+        />
+        <button class="ig-send-btn" id="ig-send-btn" aria-label="Send comment">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
+            <path d="M22 2L11 13M22 2L15 22l-4-9-9-4 20-7z" stroke="white" stroke-width="2" stroke-linejoin="round"/>
+          </svg>
+        </button>
+      </div>
     </footer>
-  </main>
+
+  </div>
 
   <script src="../assets/js/platforms.js"></script>
   <script src="../assets/js/stream-session.js"></script>
