@@ -113,25 +113,32 @@
     { user: "Rosa", text: "following now ✅" }
   ];
 
+  function bankReady() {
+    var b = window.GoLive && window.GoLive.chat;
+    return !!(b && (typeof b.subscribe === "function" ||
+      typeof b.next === "function" ||
+      (Array.isArray(b.messages) && b.messages.length)));
+  }
+
   function makeChatSource() {
     var bank = window.GoLive && window.GoLive.chat;
 
     // Push model: bank drives the feed via subscribe(fn).
     if (bank && typeof bank.subscribe === "function") {
-      return { mode: "push", subscribe: bank.subscribe.bind(bank) };
+      return { mode: "push", fromBank: true, subscribe: bank.subscribe.bind(bank) };
     }
     // Pull model: we ask for one message per tick.
     if (bank && typeof bank.next === "function") {
-      return { mode: "pull", next: bank.next.bind(bank) };
+      return { mode: "pull", fromBank: true, next: bank.next.bind(bank) };
     }
-    // Static pool: sample from an array.
-    var pool = (bank && Array.isArray(bank.messages) && bank.messages.length)
-      ? bank.messages
-      : FALLBACK_MESSAGES;
+    // Static pool: sample from the bank's array, else our local fallback.
+    var fromBank = !!(bank && Array.isArray(bank.messages) && bank.messages.length);
+    var pool = fromBank ? bank.messages : FALLBACK_MESSAGES;
     var order = shuffle(pool.slice());
     var i = 0;
     return {
       mode: "pull",
+      fromBank: fromBank,
       next: function () {
         if (i >= order.length) { order = shuffle(pool.slice()); i = 0; }
         return order[i++];
@@ -159,8 +166,11 @@
 
     var av = document.createElement("div");
     av.className = "fb-avatar fb-avatar--sm";
-    if (msg.avatar) {
-      av.style.background = "center/cover no-repeat url(" + JSON.stringify(msg.avatar) + ")";
+    // Bank-supplied avatars: only accept http(s) image URLs; otherwise initials.
+    if (msg.avatar && /^https?:\/\//i.test(msg.avatar)) {
+      av.style.backgroundImage = "url(" + JSON.stringify(msg.avatar) + ")";
+      av.style.backgroundSize = "cover";
+      av.style.backgroundPosition = "center";
       av.textContent = "";
     } else {
       paintAvatar(av, msg.user);
@@ -184,17 +194,37 @@
     while (list.children.length > MAX_COMMENTS) list.removeChild(list.firstChild);
   }
 
-  var source = makeChatSource();
-  if (source.mode === "push") {
-    source.subscribe(function (msg) { addComment(msg); });
-  } else {
-    // Seed a few, then stream at a natural, slightly irregular cadence.
-    addComment(source.next());
-    addComment(source.next());
+  var feedTimer = null;
+  function runFeed(src) {
+    if (src.mode === "push") {
+      src.subscribe(function (msg) { addComment(msg); });
+      return;
+    }
+    // Seed a couple, then stream at a natural, slightly irregular cadence.
+    addComment(src.next());
+    addComment(src.next());
     (function tick() {
-      addComment(source.next());
-      setTimeout(tick, 1600 + Math.random() * 2600);
+      addComment(src.next());
+      feedTimer = setTimeout(tick, 1600 + Math.random() * 2600);
     })();
+  }
+
+  var source = makeChatSource();
+  runFeed(source);
+
+  // The spec says the shared bank loads before us, but if it attaches late
+  // (async), upgrade off the local fallback to the real bank when it appears.
+  if (!source.fromBank) {
+    var tries = 0;
+    var poll = setInterval(function () {
+      if (bankReady()) {
+        clearInterval(poll);
+        clearTimeout(feedTimer);
+        runFeed(makeChatSource());
+      } else if (++tries >= 6) {
+        clearInterval(poll); // give up after ~6s; fallback keeps running
+      }
+    }, 1000);
   }
 
   /* ---------- Floating reactions ---------- */
@@ -229,7 +259,9 @@
     follow.addEventListener("click", function () {
       var on = follow.classList.toggle("is-following");
       follow.lastChild.textContent = on ? "Following" : "Follow";
-      if (on) { viewers += 1; if (viewersEl) renderViewers(); }
+      follow.setAttribute("aria-pressed", on ? "true" : "false");
+      viewers = Math.max(1, viewers + (on ? 1 : -1));
+      if (viewersEl) renderViewers();
     });
   }
 
@@ -244,6 +276,7 @@
   function setReaction(emoji) {
     liked = true;
     likeBtn.classList.add("is-active");
+    likeBtn.setAttribute("aria-pressed", "true");
     if (likeEmoji) likeEmoji.textContent = emoji;
     if (likeLabel) likeLabel.textContent = REACTION_LABELS[emoji] || "Like";
     burst(emoji);
@@ -278,6 +311,7 @@
       if (liked) { // toggle off
         liked = false;
         likeBtn.classList.remove("is-active");
+        likeBtn.setAttribute("aria-pressed", "false");
         if (likeEmoji) likeEmoji.textContent = "👍";
         if (likeLabel) likeLabel.textContent = "Like";
       } else {
@@ -295,6 +329,13 @@
     // Dismiss an open picker when tapping/clicking anywhere else.
     document.addEventListener("pointerdown", function (e) {
       if (!picker.contains(e.target) && !likeBtn.contains(e.target)) closePicker();
+    });
+    // Escape closes the picker and returns focus to Like.
+    document.addEventListener("keydown", function (e) {
+      if (e.key === "Escape" && picker.classList.contains("is-open")) {
+        closePicker();
+        if (likeBtn) likeBtn.focus();
+      }
     });
   }
 
@@ -317,12 +358,16 @@
   /* ---------- Share (demo only) ---------- */
   var share = $("[data-share]");
   if (share) {
+    // Capture the label once so rapid re-clicks can't latch "Copied link!" in
+    // as the value to restore.
+    var shareLabel = share.querySelector("svg").nextSibling;
+    var shareOriginal = shareLabel.textContent;
+    var shareT = null;
     share.addEventListener("click", function () {
-      var original = share.querySelector("svg").nextSibling;
-      var prev = original.textContent;
-      original.textContent = "Copied link!";
+      shareLabel.textContent = "Copied link!";
       if (navigator.clipboard) navigator.clipboard.writeText(location.href).catch(function () {});
-      setTimeout(function () { original.textContent = prev; }, 1500);
+      clearTimeout(shareT);
+      shareT = setTimeout(function () { shareLabel.textContent = shareOriginal; }, 1500);
     });
   }
 })();

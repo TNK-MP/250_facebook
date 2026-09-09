@@ -6,6 +6,7 @@
   <title>Facebook Live — GoLive</title>
   <link rel="stylesheet" href="../assets/css/base.css" />
   <link rel="stylesheet" href="../assets/css/facebook.css" />
+  <link rel="icon" href="data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%2032%2032'%3E%3Crect%20width='32'%20height='32'%20rx='7'%20fill='%231877f2'/%3E%3Ccircle%20cx='16'%20cy='16'%20r='6'%20fill='%23fa383e'/%3E%3C/svg%3E" />
   <!--
     Facebook Live look for GoLive Studio. Built to the spec in
     platforms/facebook.spec.md. Owns only: this file,
@@ -62,7 +63,6 @@
 
     <!-- Live comments -->
     <section class="fb-comments" aria-label="Live comments">
-      <div class="fb-comments-mask"></div>
       <ul class="fb-comment-list" data-comments></ul>
     </section>
 
@@ -84,7 +84,12 @@
 
       <div class="fb-actionbar">
         <div class="fb-like-wrap">
-          <div class="fb-reaction-picker" data-picker role="menu" aria-label="Pick a reaction">
+          <button type="button" class="fb-action" data-like
+                  aria-haspopup="true" aria-pressed="false">
+            <span class="fb-action-emoji" data-like-emoji>👍</span>
+            <span data-like-label>Like</span>
+          </button>
+          <div class="fb-reaction-picker" data-picker role="group" aria-label="Pick a reaction">
             <button type="button" data-reaction="👍" data-label="Like" aria-label="Like">👍</button>
             <button type="button" data-reaction="❤️" data-label="Love" aria-label="Love">❤️</button>
             <button type="button" data-reaction="😆" data-label="Haha" aria-label="Haha">😆</button>
@@ -92,10 +97,6 @@
             <button type="button" data-reaction="😢" data-label="Sad" aria-label="Sad">😢</button>
             <button type="button" data-reaction="😡" data-label="Angry" aria-label="Angry">😡</button>
           </div>
-          <button type="button" class="fb-action" data-like aria-haspopup="true">
-            <span class="fb-action-emoji" data-like-emoji>👍</span>
-            <span data-like-label>Like</span>
-          </button>
         </div>
         <button type="button" class="fb-action" data-comment-focus>
           <svg viewBox="0 0 24 24" aria-hidden="true" width="20" height="20">

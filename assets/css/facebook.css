@@ -224,7 +224,6 @@
   -webkit-mask-image: linear-gradient(to top, #000 78%, transparent);
   mask-image: linear-gradient(to top, #000 78%, transparent);
 }
-.fb-comments-mask { position: absolute; inset: 0; pointer-events: none; }
 .fb-comment-list {
   list-style: none;
   margin: 0;

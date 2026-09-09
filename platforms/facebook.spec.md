@@ -40,8 +40,12 @@ GoLive.chat.subscribe(fn) : () => void                  // bank pushes; fn(msg) 
 ```
 
 Message shape consumed: `{ user: string, text: string, avatar?: string }`.
-If `avatar` is absent we render initials. If `GoLive.chat` is missing entirely,
-use `FALLBACK_MESSAGES` local to `facebook.js` (clearly marked as a stand-in).
+`avatar` is only honored if it is an `http(s)` URL (otherwise we render
+initials), so a bank value can't inject arbitrary CSS/resources. If
+`GoLive.chat` is missing entirely, use `FALLBACK_MESSAGES` local to
+`facebook.js` (clearly marked as a stand-in). The spec assumes the bank loads
+before our JS; as a safeguard, if it attaches late the feed upgrades off the
+fallback to the real bank within a few seconds.
 
 ## 4. UI regions
 
