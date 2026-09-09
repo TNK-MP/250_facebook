@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <title data-tab-title>TikTok LIVE</title>
+  <link rel="stylesheet" href="../assets/css/base.css" />
+  <link rel="stylesheet" href="../assets/css/tiktok.css" />
+</head>
+<body class="tt">
+  <div class="tt-phone">
+    <!-- Fullscreen live video -->
+    <video data-camera autoplay muted playsinline class="tt-video"></video>
+    <div class="tt-shade"></div>
+
+    <div class="tt-camera-error" data-camera-error>
+      <strong>Camera unavailable</strong>
+      <span>Allow camera access and reload to go LIVE.</span>
+    </div>
+
+    <!-- Top bar: host pill + viewers + close -->
+    <header class="tt-top">
+      <div class="tt-hostpill">
+        <div class="tt-hostpill__avatar" data-avatar>S</div>
+        <div class="tt-hostpill__info">
+          <span class="tt-hostpill__name" data-streamer>Streamer</span>
+          <span class="tt-hostpill__meta"><span data-follower-count>48.2K</span> followers</span>
+        </div>
+        <button class="tt-hostpill__follow" data-follow>+ Follow</button>
+      </div>
+
+      <div class="tt-top__right">
+        <div class="tt-viewers">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M12 5c-5 0-9 4.5-10 7 1 2.5 5 7 10 7s9-4.5 10-7c-1-2.5-5-7-10-7zm0 11a4 4 0 1 1 0-8 4 4 0 0 1 0 8zm0-6a2 2 0 1 0 0 4 2 2 0 0 0 0-4z"/></svg>
+          <span data-viewers>1,200</span>
+        </div>
+        <span class="tt-live-badge">LIVE</span>
+        <button class="tt-close" aria-label="Close">✕</button>
+      </div>
+    </header>
+
+    <!-- Rank / top gifter ribbon -->
+    <div class="tt-ranktag">
+      <span class="tt-ranktag__crown">👑</span>
+      <span data-top-gifter>Top gifter: —</span>
+    </div>
+
+    <!-- Floating hearts rise here -->
+    <div class="tt-hearts" data-hearts aria-hidden="true"></div>
+
+    <!-- Gift alert banner -->
+    <div class="tt-gift" data-gift aria-hidden="true"></div>
+
+    <!-- Right action rail -->
+    <div class="tt-rail">
+      <button class="tt-rail__btn tt-rail__profile" data-nav-avatar aria-label="Profile">Y</button>
+
+      <button class="tt-rail__btn" data-like aria-label="Like">
+        <span class="tt-rail__icon tt-rail__heart">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M12 21s-7.5-4.9-10-9.5C.6 8.2 2.3 5 5.6 5c2 0 3.4 1.2 4.4 2.5C11 6.2 12.4 5 14.4 5 17.7 5 19.4 8.2 22 11.5 19.5 16.1 12 21 12 21z"/></svg>
+        </span>
+        <span class="tt-rail__count" data-like-count>0</span>
+      </button>
+
+      <button class="tt-rail__btn" aria-label="Comments">
+        <span class="tt-rail__icon">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M4 4h16a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2H9l-5 4v-4H4a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2z"/></svg>
+        </span>
+        <span class="tt-rail__count" data-comment-count>0</span>
+      </button>
+
+      <button class="tt-rail__btn" aria-label="Share">
+        <span class="tt-rail__icon">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M14 9V5l7 7-7 7v-4C9 12 5.5 13.5 3 17c.5-6 4.5-9 11-8z"/></svg>
+        </span>
+        <span class="tt-rail__count">Share</span>
+      </button>
+
+      <button class="tt-rail__btn" aria-label="Gift">
+        <span class="tt-rail__icon tt-rail__gift">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M20 7h-2.2A3 3 0 0 0 12 4a3 3 0 0 0-5.8 3H4a1 1 0 0 0-1 1v3h9V8h2v3h9V8a1 1 0 0 0-1-1zM11 13H3v7a1 1 0 0 0 1 1h7v-8zm2 0v8h7a1 1 0 0 0 1-1v-7h-8z"/></svg>
+        </span>
+        <span class="tt-rail__count">Gift</span>
+      </button>
+
+      <div class="tt-rail__disc" aria-hidden="true">
+        <div class="tt-rail__disc-avatar" data-avatar-mini>S</div>
+      </div>
+    </div>
+
+    <!-- Bottom: scrolling comments + input -->
+    <div class="tt-bottom">
+      <div class="tt-comments" data-chat aria-live="polite"></div>
+      <div class="tt-composer">
+        <input type="text" data-chat-input placeholder="Add comment..." aria-label="Add comment" maxlength="150" />
+        <button class="tt-composer__send" data-chat-send aria-label="Send">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M3 20l18-8L3 4l4 8-4 8z"/></svg>
+        </button>
+        <button class="tt-composer__heart" data-like aria-label="Like">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M12 21s-7.5-4.9-10-9.5C.6 8.2 2.3 5 5.6 5c2 0 3.4 1.2 4.4 2.5C11 6.2 12.4 5 14.4 5 17.7 5 19.4 8.2 22 11.5 19.5 16.1 12 21 12 21z"/></svg>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <script src="../assets/js/platforms.js"></script>
+  <script src="../assets/js/stream-session.js"></script>
+  <script src="../assets/js/platforms/tiktok.js"></script>
+</body>
+</html>
