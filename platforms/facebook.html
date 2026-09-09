@@ -33,7 +33,10 @@
                 fill="none" stroke="currentColor" stroke-width="2"/>
           <circle cx="12" cy="12" r="3" fill="currentColor"/>
         </svg>
-        <span data-viewers>0</span>
+        <span data-viewers>0</span> watching
+      </span>
+      <span class="fb-likes" data-likes-pill hidden>
+        <span class="fb-likes-emoji">❤️</span><span data-likes>0</span>
       </span>
     </div>
 
@@ -74,7 +77,7 @@
                autocomplete="off" placeholder="Comment as @you" maxlength="140" />
         <button type="submit" class="fb-send" aria-label="Send comment">
           <svg viewBox="0 0 24 24" aria-hidden="true" width="20" height="20">
-            <path d="M4 12l16-8-6 8 6 8-16-8z" fill="currentColor"/>
+            <path d="M2 21l21-9L2 3v7l15 2-15 2v7z" fill="currentColor"/>
           </svg>
         </button>
       </form>
@@ -82,12 +85,12 @@
       <div class="fb-actionbar">
         <div class="fb-like-wrap">
           <div class="fb-reaction-picker" data-picker role="menu" aria-label="Pick a reaction">
-            <button type="button" data-reaction="👍" title="Like">👍</button>
-            <button type="button" data-reaction="❤️" title="Love">❤️</button>
-            <button type="button" data-reaction="😆" title="Haha">😆</button>
-            <button type="button" data-reaction="😮" title="Wow">😮</button>
-            <button type="button" data-reaction="😢" title="Sad">😢</button>
-            <button type="button" data-reaction="😡" title="Angry">😡</button>
+            <button type="button" data-reaction="👍" data-label="Like" aria-label="Like">👍</button>
+            <button type="button" data-reaction="❤️" data-label="Love" aria-label="Love">❤️</button>
+            <button type="button" data-reaction="😆" data-label="Haha" aria-label="Haha">😆</button>
+            <button type="button" data-reaction="😮" data-label="Wow" aria-label="Wow">😮</button>
+            <button type="button" data-reaction="😢" data-label="Sad" aria-label="Sad">😢</button>
+            <button type="button" data-reaction="😡" data-label="Angry" aria-label="Angry">😡</button>
           </div>
           <button type="button" class="fb-action" data-like aria-haspopup="true">
             <span class="fb-action-emoji" data-like-emoji>👍</span>

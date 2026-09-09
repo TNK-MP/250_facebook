@@ -56,14 +56,15 @@
     });
   }
 
+  /* ---------- Count formatting (viewers + likes) ---------- */
+  function fmtCount(n) {
+    return n >= 1000 ? (n / 1000).toFixed(1).replace(/\.0$/, "") + "K" : String(n);
+  }
+
   /* ---------- Live viewer count ---------- */
   var viewersEl = $("[data-viewers]");
   var viewers = 40 + Math.floor(Math.random() * 120);
-  function renderViewers() {
-    viewersEl.textContent = viewers >= 1000
-      ? (viewers / 1000).toFixed(1).replace(/\.0$/, "") + "K"
-      : String(viewers);
-  }
+  function renderViewers() { viewersEl.textContent = fmtCount(viewers); }
   if (viewersEl) {
     renderViewers();
     setInterval(function () {
@@ -71,6 +72,25 @@
       renderViewers();
     }, 2500);
   }
+
+  /* ---------- Running like counter ---------- */
+  var likesPill = $("[data-likes-pill]");
+  var likesEl = $("[data-likes]");
+  var likes = 0;
+  var bumpT = null;
+  function addLikes(n) {
+    likes += n;
+    if (!likesEl) return;
+    likesEl.textContent = fmtCount(likes);
+    if (likesPill) {
+      likesPill.hidden = false;
+      likesPill.setAttribute("data-bump", "");
+      clearTimeout(bumpT);
+      bumpT = setTimeout(function () { likesPill.removeAttribute("data-bump"); }, 400);
+    }
+  }
+  // Ambient reactions from "other viewers" drip in even without visible floats.
+  setInterval(function () { addLikes(1 + Math.floor(Math.random() * 5)); }, 2100);
 
   /* ---------- Chat bank adapter (the seam) ----------
    * Consumes whichever surface GoLive.chat exposes; falls back to a local
@@ -180,6 +200,7 @@
   /* ---------- Floating reactions ---------- */
   var lane = $("[data-reaction-lane]");
   function floatReaction(emoji) {
+    addLikes(1); // every reaction — floated or not — counts
     if (!lane || reduceMotion) return;
     var span = document.createElement("span");
     span.className = "fb-float";
