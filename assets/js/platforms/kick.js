@@ -4,7 +4,8 @@
  * camera, uptime clock, drifting viewer count, the followed-channel rail, and
  * a simulated chat you can talk in.
  *
- * Shared helpers used: GoLive.session(), GoLive.startCamera(), GoLive.startTimer().
+ * Shared helpers used: GoLive.session(), GoLive.startCamera(), GoLive.startTimer(),
+ * GoLive.startViewerCount().
  */
 (function () {
   const s = GoLive.session(); // { username, streamer, platform }
@@ -69,26 +70,24 @@
   /* ------------------------------------------------------- viewer counters */
 
   const viewerEls = $$("[data-viewers]");
-  let viewers = rand(1800, 9400);
-
-  function paintViewers() {
-    const text = compact(viewers);
-    viewerEls.forEach((el) => (el.textContent = text));
-  }
-
-  paintViewers();
-  // Drift the count every few seconds so it never looks frozen.
-  setInterval(() => {
-    viewers = Math.max(120, viewers + rand(-40, 65));
-    paintViewers();
-  }, 3200);
-
   const chattersEl = $("[data-chatters]");
-  if (chattersEl) {
-    const paintChatters = () => (chattersEl.textContent = compact(Math.round(viewers * 0.14)));
-    paintChatters();
-    setInterval(paintChatters, 3200);
+  // Set by the rail below; painted here so every count stays in lockstep.
+  let railSelfCount = null;
+
+  // The shared counter owns the number — it seeds from the "Starting viewers"
+  // field on the landing form (s.viewers) and drifts net-upward on its own.
+  // Passing null means it renders nothing itself; Kick paints its own spots.
+  const counter = GoLive.startViewerCount(null, { start: s.viewers, interval: 2500 });
+
+  function paintCounts() {
+    const n = counter.value;
+    viewerEls.forEach((el) => (el.textContent = n.toLocaleString()));
+    if (chattersEl) chattersEl.textContent = compact(Math.round(n * 0.14));
+    if (railSelfCount) railSelfCount.textContent = compact(n);
   }
+
+  paintCounts();
+  setInterval(paintCounts, 1000);
 
   /* --------------------------------------------------------- follow button */
 
@@ -209,13 +208,12 @@
     const self = railItem({
       name: s.streamer,
       game: "Just Chatting",
-      live: viewers,
+      live: counter.value,
       active: true,
     });
     followingList.appendChild(self);
-    // Keep the rail's own viewer number in sync with the header count.
-    const selfCount = self.querySelector(".rail__viewers");
-    setInterval(() => (selfCount.textContent = compact(viewers)), 3200);
+    // Hand the element to paintCounts so it tracks the header count.
+    railSelfCount = self.querySelector(".rail__viewers");
 
     OTHER_CHANNELS.slice(0, 4).forEach((c) =>
       followingList.appendChild(railItem({ ...c, live: rand(400, 62000) }))
@@ -327,6 +325,19 @@
       fakeMessage();
       loop();
     }, rand(700, 2600));
+  })();
+
+  // Every so often another channel raids in — a chat line plus a real jump in
+  // the viewer count, which is what counter.bump() is for.
+  (function raidLoop() {
+    setTimeout(() => {
+      const raider = pick(OTHER_CHANNELS).name;
+      const size = rand(60, 900);
+      counter.bump(size);
+      paintCounts();
+      addSystemMessage(`${raider} is raiding with ${size.toLocaleString()} viewers!`);
+      raidLoop();
+    }, rand(45000, 110000));
   })();
 
   if (form && input) {
