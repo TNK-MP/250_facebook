@@ -1,17 +1,17 @@
 /* Kick page bootstrap.
  *
  * Drives everything that makes the static markup feel like a live Kick page:
- * camera, uptime clock, drifting viewer count, the followed-channel rail, and
- * a simulated chat you can talk in.
+ * camera, uptime clock, viewer count, the channel rail, a simulated chat you
+ * can talk in, and channel switching so you can watch other people's channels.
  *
  * Shared helpers used: GoLive.session(), GoLive.startCamera(), GoLive.startTimer(),
  * GoLive.startViewerCount().
  */
 (function () {
-  const s = GoLive.session(); // { username, streamer, platform }
+  const s = GoLive.session(); // { username, streamer, viewers, platform }
 
-  const $ = (sel) => document.querySelector(sel);
-  const $$ = (sel) => Array.from(document.querySelectorAll(sel));
+  const $ = (sel, root) => (root || document).querySelector(sel);
+  const $$ = (sel, root) => Array.from((root || document).querySelectorAll(sel));
 
   /* ------------------------------------------------------------- helpers */
 
@@ -25,7 +25,7 @@
     return String(n);
   }
 
-  /** Stable pastel-ish hue from a string, so a name always gets the same colour. */
+  /** Stable hue from a string, so a name always gets the same colour. */
   function hueFor(str) {
     let h = 0;
     for (let i = 0; i < str.length; i++) h = (h * 31 + str.charCodeAt(i)) % 360;
@@ -33,25 +33,81 @@
   }
 
   const colorFor = (name) => `hsl(${hueFor(name)} 85% 65%)`;
-  const initial = (str) => (str.trim()[0] || "?").toUpperCase();
+  const initial = (str) => (String(str).trim()[0] || "?").toUpperCase();
+  const handleFor = (name) => name.toLowerCase().replace(/[^a-z0-9_]/g, "_");
 
-  /* ------------------------------------------------------ identity fill-in */
+  /* -------------------------------------------------------------- toasts */
 
-  $$("[data-streamer]").forEach((el) => (el.textContent = s.streamer));
-  $$("[data-username]").forEach((el) => (el.textContent = "@" + s.username));
-  $$("[data-avatar-initial]").forEach((el) => (el.textContent = initial(s.streamer)));
+  const toastRegion = $("[data-toasts]");
 
-  document.title = `${s.streamer} - ${s.platform ? s.platform.name : "Kick"}`;
+  function toast(text, emphasis) {
+    if (!toastRegion) return;
+    const el = document.createElement("div");
+    el.className = "toast";
+    if (emphasis) {
+      const strong = document.createElement("strong");
+      strong.textContent = emphasis;
+      el.append(strong, document.createTextNode(" " + text));
+    } else {
+      el.textContent = text;
+    }
+    toastRegion.appendChild(el);
+    setTimeout(() => el.remove(), 2600);
+  }
 
-  const titleEl = $("[data-stream-title]");
-  if (titleEl) {
-    titleEl.textContent = pick([
+  /* ------------------------------------------------------- channel models */
+
+  // Your own channel, seeded from the landing form.
+  const SELF = {
+    name: s.streamer,
+    handle: s.username,
+    game: "Just Chatting",
+    title: pick([
       `${s.streamer} is live — come hang out`,
       `late night stream w/ ${s.streamer}`,
       `first stream of the week! !socials !discord`,
       `chill vibes only :: ${s.streamer}`,
-    ]);
-  }
+    ]),
+    followers: rand(24000, 480000),
+    viewers: s.viewers,
+    verified: true,
+    following: true,
+    self: true,
+    bio:
+      `${s.streamer} streams on Kick as @${s.username}. This is a GoLive Studio ` +
+      `demo channel — the video is your own webcam and the chat is simulated.`,
+  };
+
+  const OTHERS = [
+    { name: "xQc", game: "Just Chatting", title: "JUICER KING | !prime !socials", followers: 2600000, viewers: 48200, verified: true, following: true },
+    { name: "Amouranth", game: "IRL", title: "hot tub stream :: !socials", followers: 1450000, viewers: 12800, verified: true, following: true },
+    { name: "Trainwreckstv", game: "Slots", title: "late night gambling talk", followers: 1100000, viewers: 9400, verified: true, following: true },
+    { name: "AdinRoss", game: "Just Chatting", title: "BIG ANNOUNCEMENT TODAY", followers: 1900000, viewers: 31500, verified: true, following: true },
+    { name: "Nickmercs", game: "Warzone", title: "MFAM grind — ranked push", followers: 860000, viewers: 7300, verified: true, following: false },
+    { name: "Destiny", game: "Politics", title: "debate night, calling in guests", followers: 410000, viewers: 4100, verified: false, following: false },
+    { name: "kaicenat", game: "Just Chatting", title: "MAFIATHON — day 12", followers: 2200000, viewers: 62700, verified: true, following: false },
+    { name: "iceposeidon", game: "IRL", title: "walking around downtown", followers: 520000, viewers: 2800, verified: false, following: false },
+  ];
+
+  OTHERS.forEach((c) => {
+    c.handle = handleFor(c.name);
+    c.self = false;
+    c.bio =
+      `${c.name} streams ${c.game} on Kick. Follow the channel to get a ` +
+      `notification every time they go live. (Simulated channel.)`;
+  });
+
+  const CHANNELS = [SELF].concat(OTHERS);
+
+  let current = null; // the channel on screen
+  let counter = null; // GoLive.startViewerCount() handle for `current`
+
+  /* ------------------------------------------------------ identity fill-in */
+
+  // These describe YOU, not the channel being watched, so they're set once.
+  $$("[data-streamer]").forEach((el) => (el.textContent = s.streamer));
+  $$("[data-username]").forEach((el) => (el.textContent = "@" + s.username));
+  $$("[data-avatar-initial]").forEach((el) => (el.textContent = initial(s.streamer)));
 
   /* ------------------------------------------------------------ the clock */
 
@@ -67,54 +123,446 @@
     if (errorEl) errorEl.style.display = "grid";
   });
 
-  /* ------------------------------------------------------- viewer counters */
+  /* --------------------------------------------------------- count painting */
 
   const viewerEls = $$("[data-viewers]");
   const chattersEl = $("[data-chatters]");
-  // Set by the rail below; painted here so every count stays in lockstep.
-  let railSelfCount = null;
-
-  // The shared counter owns the number — it seeds from the "Starting viewers"
-  // field on the landing form (s.viewers) and drifts net-upward on its own.
-  // Passing null means it renders nothing itself; Kick paints its own spots.
-  const counter = GoLive.startViewerCount(null, { start: s.viewers, interval: 2500 });
+  const followersEl = $("[data-followers]");
 
   function paintCounts() {
+    if (!counter) return;
     const n = counter.value;
     viewerEls.forEach((el) => (el.textContent = n.toLocaleString()));
     if (chattersEl) chattersEl.textContent = compact(Math.round(n * 0.14));
-    if (railSelfCount) railSelfCount.textContent = compact(n);
+    if (current && current.railCount) current.railCount.textContent = compact(n);
   }
 
-  paintCounts();
+  function paintFollowers() {
+    if (followersEl && current) followersEl.textContent = compact(current.followers);
+  }
+
   setInterval(paintCounts, 1000);
 
-  /* --------------------------------------------------------- follow button */
+  /* ------------------------------------------------------ channel switching */
 
-  const followersEl = $("[data-followers]");
-  let followers = rand(24000, 480000);
-  const paintFollowers = () => followersEl && (followersEl.textContent = compact(followers));
-  paintFollowers();
-
+  const channelAvatar = $("[data-channel-avatar]");
+  const channelNames = $$("[data-channel-name]"); // header + about panel
+  const channelBio = $("[data-channel-bio]");
+  const channelVerified = $("[data-channel-verified]");
+  const channelGame = $("[data-channel-game]");
+  const channelHandle = $("[data-channel-handle]");
+  const titleEl = $("[data-stream-title]");
   const followBtn = $("[data-follow]");
   const followLabel = $("[data-follow-label]");
+  const viewingBar = $("[data-viewing-bar]");
+  const viewingName = $("[data-viewing-name]");
+  const chatInput = $("[data-chat-input]");
+
+  function renderChannel(ch) {
+    // Remember where the previous channel's count had drifted to, so coming
+    // back to it doesn't reset the number.
+    if (current && counter) {
+      current.viewers = counter.value;
+      counter.stop();
+    }
+    current = ch;
+
+    if (channelAvatar) {
+      channelAvatar.textContent = initial(ch.name);
+      channelAvatar.style.background = ch.self ? "var(--kick-green)" : colorFor(ch.name);
+    }
+    channelNames.forEach((el) => (el.textContent = ch.name));
+    if (channelBio) channelBio.textContent = ch.bio;
+    if (channelVerified) channelVerified.style.display = ch.verified ? "" : "none";
+    if (channelGame) channelGame.textContent = ch.game;
+    if (channelHandle) channelHandle.textContent = "@" + ch.handle;
+    if (titleEl) titleEl.textContent = ch.title;
+    if (chatInput) chatInput.placeholder = `Send a message to ${ch.name}...`;
+
+    // follow button reflects this channel's state
+    if (followBtn) {
+      followBtn.setAttribute("aria-pressed", String(!!ch.following));
+      if (followLabel) followLabel.textContent = ch.following ? "Following" : "Follow";
+    }
+
+    // "you're watching someone else" bar
+    if (viewingBar) {
+      viewingBar.hidden = !!ch.self;
+      if (viewingName) viewingName.textContent = ch.name;
+    }
+
+    // rail highlight
+    CHANNELS.forEach((c) => {
+      if (c.railEl) c.railEl.classList.toggle("rail__item--active", c === ch);
+      // your own row stays green whether or not you're currently on it
+      if (c.railAvatar) {
+        c.railAvatar.style.background = c.self ? "var(--kick-green)" : colorFor(c.name);
+      }
+    });
+
+    counter = GoLive.startViewerCount(null, { start: ch.viewers, interval: 2500 });
+    paintCounts();
+    paintFollowers();
+
+    document.title = `${ch.name} - ${s.platform ? s.platform.name : "Kick"}`;
+
+    // fresh chat for the new channel
+    resetChat();
+    addSystemMessage(
+      ch.self
+        ? `Welcome to your own channel, ${ch.name}. You're live!`
+        : `Welcome to the ${ch.name} channel!`
+    );
+    for (let i = 0; i < 10; i++) fakeMessage();
+
+    if (!ch.self) toast(`Now watching ${ch.name}`, "LIVE");
+    renderBrowseGrid();
+  }
+
+  /* ---------------------------------------------------------- the left rail */
+
+  function railItem(ch) {
+    const li = document.createElement("li");
+    const btn = document.createElement("button");
+    btn.type = "button";
+    btn.className = "rail__item";
+
+    const avatar = document.createElement("span");
+    avatar.className = "rail__avatar";
+    avatar.style.background = colorFor(ch.name);
+    avatar.textContent = initial(ch.name);
+
+    const meta = document.createElement("span");
+    meta.className = "rail__meta";
+    const nameEl = document.createElement("span");
+    nameEl.className = "rail__name";
+    nameEl.textContent = ch.self ? ch.name + " (you)" : ch.name;
+    const gameEl = document.createElement("span");
+    gameEl.className = "rail__game";
+    gameEl.textContent = ch.game;
+    meta.append(nameEl, gameEl);
+
+    const count = document.createElement("span");
+    count.className = "rail__viewers";
+    count.textContent = compact(ch.viewers);
+
+    btn.append(avatar, meta, count);
+    btn.addEventListener("click", () => renderChannel(ch));
+    li.appendChild(btn);
+
+    // stash refs so renderChannel/paintCounts can update this row
+    ch.railEl = btn;
+    ch.railAvatar = avatar;
+    ch.railCount = count;
+    return li;
+  }
+
+  const followingList = $("[data-rail-following]");
+  const recommendedList = $("[data-rail-recommended]");
+
+  if (followingList) {
+    followingList.appendChild(railItem(SELF));
+    OTHERS.filter((c) => c.following).forEach((c) => followingList.appendChild(railItem(c)));
+  }
+  if (recommendedList) {
+    OTHERS.filter((c) => !c.following).forEach((c) => recommendedList.appendChild(railItem(c)));
+  }
+
+  /* ------------------------------------------------------------ browse grid */
+
+  const browse = $("[data-browse]");
+  const browseGrid = $("[data-browse-grid]");
+  const browseFilter = $("[data-browse-filter]");
+  const browseTitle = $("[data-browse-title]");
+  let browseScope = "all"; // "all" | "following"
+
+  function browseCard(ch) {
+    const card = document.createElement("button");
+    card.type = "button";
+    card.className = "browse__card" + (ch === current ? " browse__card--self" : "");
+
+    const thumb = document.createElement("div");
+    thumb.className = "browse__thumb";
+    thumb.style.background = `linear-gradient(135deg, ${colorFor(ch.name)}, #0b0e0f)`;
+    thumb.textContent = initial(ch.name);
+
+    const live = document.createElement("span");
+    live.className = "badge-live";
+    live.textContent = "LIVE";
+
+    const count = document.createElement("span");
+    count.className = "badge-dark";
+    count.textContent = compact(ch === current && counter ? counter.value : ch.viewers) + " watching";
+
+    thumb.append(live, count);
+
+    const body = document.createElement("div");
+    body.className = "browse__body";
+    const avatar = document.createElement("span");
+    avatar.className = "browse__avatar";
+    avatar.style.background = ch.self ? "var(--kick-green)" : colorFor(ch.name);
+    avatar.textContent = initial(ch.name);
+
+    const meta = document.createElement("div");
+    meta.className = "browse__meta";
+    const t = document.createElement("div");
+    t.className = "browse__title";
+    t.textContent = ch.title;
+    const n = document.createElement("span");
+    n.className = "browse__name";
+    n.textContent = ch.self ? ch.name + " (you)" : ch.name;
+    const g = document.createElement("span");
+    g.className = "browse__game";
+    g.textContent = ch.game;
+    meta.append(t, n, g);
+    body.append(avatar, meta);
+
+    card.append(thumb, body);
+    card.addEventListener("click", () => {
+      renderChannel(ch);
+      closeBrowse();
+    });
+    return card;
+  }
+
+  function renderBrowseGrid() {
+    if (!browseGrid) return;
+    const q = (browseFilter ? browseFilter.value : "").trim().toLowerCase();
+    const pool = browseScope === "following" ? CHANNELS.filter((c) => c.following) : CHANNELS;
+    const matches = pool.filter(
+      (c) =>
+        !q ||
+        c.name.toLowerCase().includes(q) ||
+        c.game.toLowerCase().includes(q) ||
+        c.title.toLowerCase().includes(q)
+    );
+
+    browseGrid.textContent = "";
+    if (!matches.length) {
+      const empty = document.createElement("p");
+      empty.className = "browse__empty";
+      empty.textContent = `No channels match "${q}".`;
+      browseGrid.appendChild(empty);
+      return;
+    }
+    matches.forEach((c) => browseGrid.appendChild(browseCard(c)));
+  }
+
+  function openBrowse(scope, query, heading) {
+    if (!browse) return;
+    browseScope = scope || "all";
+    if (browseFilter) browseFilter.value = query || "";
+    if (browseTitle) browseTitle.textContent = heading || "Browse channels";
+    browse.hidden = false;
+    renderBrowseGrid();
+    if (browseFilter) browseFilter.focus();
+  }
+
+  function closeBrowse() {
+    if (browse) browse.hidden = true;
+  }
+
+  if (browseFilter) browseFilter.addEventListener("input", renderBrowseGrid);
+  $$("[data-browse-close]").forEach((b) => b.addEventListener("click", closeBrowse));
+  if (browse) {
+    // click the dim backdrop to dismiss
+    browse.addEventListener("click", (e) => {
+      if (e.target === browse) closeBrowse();
+    });
+  }
+
+  // top-bar nav
+  $$("[data-nav]").forEach((link) => {
+    link.addEventListener("click", (e) => {
+      e.preventDefault();
+      $$("[data-nav]").forEach((l) => l.removeAttribute("aria-current"));
+      link.setAttribute("aria-current", "page");
+      const which = link.getAttribute("data-nav");
+      if (which === "following") openBrowse("following", "", "Channels you follow");
+      else if (which === "categories") openBrowse("all", "", "Categories");
+      else openBrowse("all", "", "Browse channels");
+    });
+  });
+
+  // top-bar search feeds the same overlay
+  const searchForm = $("[data-search-form]");
+  const searchInput = $("[data-search]");
+  if (searchForm && searchInput) {
+    searchForm.addEventListener("submit", (e) => {
+      e.preventDefault();
+      openBrowse("all", searchInput.value, "Search results");
+    });
+    searchInput.addEventListener("input", () => {
+      if (searchInput.value.trim().length >= 2) {
+        openBrowse("all", searchInput.value, "Search results");
+        searchInput.focus(); // keep typing in the top bar, not the overlay
+      }
+    });
+  }
+
+  /* -------------------------------------------------------------- popovers */
+
+  function popToggleFor(pop) {
+    const name = pop.getAttribute("data-pop");
+    return $(`[data-pop-toggle="${name}"]`);
+  }
+
+  function closePops(except) {
+    $$("[data-pop]").forEach((pop) => {
+      if (pop === except) return;
+      pop.hidden = true;
+      const t = popToggleFor(pop);
+      if (t) t.setAttribute("aria-expanded", "false");
+    });
+  }
+
+  document.addEventListener("click", (e) => {
+    const toggle = e.target.closest("[data-pop-toggle]");
+    if (toggle) {
+      const pop = $(`[data-pop="${toggle.getAttribute("data-pop-toggle")}"]`);
+      const willOpen = pop && pop.hidden;
+      closePops(willOpen ? pop : null);
+      if (pop) {
+        pop.hidden = !willOpen;
+        toggle.setAttribute("aria-expanded", String(willOpen));
+      }
+      return;
+    }
+    if (!e.target.closest(".pop")) closePops();
+  });
+
+  document.addEventListener("keydown", (e) => {
+    if (e.key !== "Escape") return;
+    if (browse && !browse.hidden) closeBrowse();
+    closePops();
+  });
+
+  /* --------------------------------------------------- follow / subscribe */
+
   if (followBtn) {
     followBtn.addEventListener("click", () => {
-      const following = followBtn.getAttribute("aria-pressed") === "true";
-      followBtn.setAttribute("aria-pressed", String(!following));
-      if (followLabel) followLabel.textContent = following ? "Follow" : "Following";
-      followers += following ? -1 : 1;
+      current.following = !current.following;
+      followBtn.setAttribute("aria-pressed", String(current.following));
+      if (followLabel) followLabel.textContent = current.following ? "Following" : "Follow";
+      current.followers += current.following ? 1 : -1;
       paintFollowers();
-      if (!following) addSystemMessage(`@${s.username} followed the channel!`);
+      if (current.following) {
+        addSystemMessage(`@${s.username} followed the channel!`);
+        toast(`You're now following ${current.name}`, "♥");
+      } else {
+        toast(`Unfollowed ${current.name}`);
+      }
     });
   }
 
   const subBtn = $("[data-subscribe]");
   if (subBtn) {
-    subBtn.addEventListener("click", () =>
-      addSystemMessage(`@${s.username} subscribed to ${s.streamer} — Tier 1!`)
-    );
+    subBtn.addEventListener("click", () => {
+      addSystemMessage(`@${s.username} subscribed to ${current.name} — Tier 1!`);
+      if (counter) counter.bump(rand(1, 4));
+      paintCounts();
+      toast(`Subscribed to ${current.name} — Tier 1`, "★");
+    });
   }
+
+  /* ------------------------------------------------- share / more options */
+
+  function copyLink() {
+    const url = location.href;
+    const done = () => toast("Channel link copied to clipboard", "🔗");
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(url).then(done, () => toast(url));
+    } else {
+      toast(url);
+    }
+  }
+
+  const shareBtn = $("[data-share]");
+  if (shareBtn) {
+    shareBtn.addEventListener("click", () => {
+      if (navigator.share) {
+        navigator
+          .share({ title: current.name + " on Kick", url: location.href })
+          .catch(copyLink);
+      } else {
+        copyLink();
+      }
+    });
+  }
+
+  const copyLinkBtn = $("[data-copy-link]");
+  if (copyLinkBtn) copyLinkBtn.addEventListener("click", () => { copyLink(); closePops(); });
+
+  const theatreBtn = $("[data-theatre]");
+  if (theatreBtn) {
+    theatreBtn.addEventListener("click", () => {
+      const on = document.querySelector(".kick").classList.toggle("kick--theatre");
+      theatreBtn.textContent = on ? "Exit theatre mode" : "Theatre mode";
+      closePops();
+      toast(on ? "Theatre mode on" : "Theatre mode off");
+    });
+  }
+
+  // Menu entries with nothing real behind them at least say so.
+  $$("[data-stub]").forEach((btn) => {
+    btn.addEventListener("click", () => {
+      toast(btn.getAttribute("data-stub") + " — not wired up in this demo");
+      closePops();
+    });
+  });
+
+  /* -------------------------------------------------------- notifications */
+
+  const NOTIFS = [
+    { who: "kaicenat", what: "went live — MAFIATHON — day 12", when: "2m ago" },
+    { who: "xQc", what: "went live — JUICER KING", when: "18m ago" },
+    { who: "Nickmercs", what: "posted a clip you might like", when: "1h ago" },
+  ];
+
+  const notifList = $("[data-notif-list]");
+  const notifBadge = $("[data-notif-badge]");
+
+  if (notifList) {
+    NOTIFS.forEach((n) => {
+      const row = document.createElement("div");
+      row.className = "notif";
+      const dot = document.createElement("span");
+      dot.className = "notif__dot";
+      const text = document.createElement("div");
+      text.className = "notif__text";
+      const who = document.createElement("strong");
+      who.textContent = n.who + " ";
+      const time = document.createElement("span");
+      time.className = "notif__time";
+      time.textContent = n.when;
+      text.append(who, document.createTextNode(n.what), time);
+      row.append(dot, text);
+      notifList.appendChild(row);
+    });
+  }
+
+  const notifClear = $("[data-notif-clear]");
+  if (notifClear) {
+    notifClear.addEventListener("click", () => {
+      $$(".notif__dot").forEach((d) => (d.style.background = "var(--kick-border)"));
+      if (notifBadge) notifBadge.remove();
+      toast("Notifications marked as read");
+      closePops();
+    });
+  }
+
+  /* ---------------------------------------------------------------- kicks */
+
+  $$("[data-kicks]").forEach((btn) => {
+    btn.addEventListener("click", () => {
+      const amount = Number(btn.getAttribute("data-kicks"));
+      addSystemMessage(`@${s.username} sent ${amount.toLocaleString()} kicks to ${current.name}!`);
+      if (counter) counter.bump(rand(2, 12));
+      paintCounts();
+      toast(`Sent ${amount.toLocaleString()} kicks`, "⚡");
+      closePops();
+    });
+  });
 
   /* -------------------------------------------------------- player buttons */
 
@@ -124,7 +572,11 @@
   const SPEAKER_OFF =
     '<path d="M4 9h4l5-4v14l-5-4H4V9z" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/>' +
     '<path d="M17 9l4 6M21 9l-4 6" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>';
+  const ICON_PAUSE =
+    '<path d="M9 5v14M15 5v14" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>';
+  const ICON_PLAY = '<path d="M8 5l11 7-11 7V5z" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/>';
 
+  const playerEl = $("[data-player]");
   const muteBtn = $("[data-mute]");
   const volume = $("#kick-volume");
 
@@ -139,9 +591,7 @@
     if (volume) volume.value = muted ? 0 : Math.round((video ? video.volume : 1) * 100);
   }
 
-  if (muteBtn) {
-    muteBtn.addEventListener("click", () => setMuted(!(video && video.muted)));
-  }
+  if (muteBtn) muteBtn.addEventListener("click", () => setMuted(!(video && video.muted)));
 
   if (volume) {
     volume.addEventListener("input", () => {
@@ -151,80 +601,61 @@
     });
   }
 
+  const playPauseBtn = $("[data-playpause]");
+  if (playPauseBtn && video) {
+    playPauseBtn.addEventListener("click", () => {
+      const paused = video.paused;
+      if (paused) video.play().catch(() => {});
+      else video.pause();
+      // state flips after the call, so read it fresh
+      const nowPaused = !paused;
+      const svg = playPauseBtn.querySelector("svg");
+      if (svg) svg.innerHTML = nowPaused ? ICON_PLAY : ICON_PAUSE;
+      playPauseBtn.setAttribute("aria-label", nowPaused ? "Play" : "Pause");
+      if (playerEl) playerEl.classList.toggle("player--paused", nowPaused);
+    });
+  }
+
   const fsBtn = $("[data-fullscreen]");
   if (fsBtn) {
     fsBtn.addEventListener("click", () => {
-      const stage = document.querySelector(".player");
       if (document.fullscreenElement) document.exitFullscreen();
-      else if (stage && stage.requestFullscreen) stage.requestFullscreen().catch(() => {});
+      else if (playerEl && playerEl.requestFullscreen) playerEl.requestFullscreen().catch(() => {});
     });
   }
 
-  /* ----------------------------------------------------- followed-channel rail */
-
-  const OTHER_CHANNELS = [
-    { name: "xQc", game: "Just Chatting" },
-    { name: "Amouranth", game: "IRL" },
-    { name: "Trainwreckstv", game: "Slots" },
-    { name: "AdinRoss", game: "Just Chatting" },
-    { name: "Nickmercs", game: "Warzone" },
-    { name: "Destiny", game: "Politics" },
-    { name: "kaicenat", game: "Just Chatting" },
-    { name: "iceposeidon", game: "IRL" },
-  ];
-
-  function railItem({ name, game, live, active }) {
-    const li = document.createElement("li");
-    li.className = "rail__item" + (active ? " rail__item--active" : "");
-
-    const avatar = document.createElement("span");
-    avatar.className = "rail__avatar";
-    avatar.style.background = active ? "var(--kick-green)" : colorFor(name);
-    avatar.textContent = initial(name);
-
-    const meta = document.createElement("span");
-    meta.className = "rail__meta";
-    const nameEl = document.createElement("span");
-    nameEl.className = "rail__name";
-    nameEl.textContent = name;
-    const gameEl = document.createElement("span");
-    gameEl.className = "rail__game";
-    gameEl.textContent = game;
-    meta.append(nameEl, gameEl);
-
-    const count = document.createElement("span");
-    count.className = "rail__viewers";
-    count.textContent = compact(live);
-
-    li.append(avatar, meta, count);
-    return li;
-  }
-
-  const followingList = $("[data-rail-following]");
-  const recommendedList = $("[data-rail-recommended]");
-
-  if (followingList) {
-    // The channel you're watching sits at the top, highlighted.
-    const self = railItem({
-      name: s.streamer,
-      game: "Just Chatting",
-      live: counter.value,
-      active: true,
+  // quality menu
+  const qualityLabel = $("[data-quality-label]");
+  $$("[data-quality]").forEach((btn) => {
+    btn.addEventListener("click", () => {
+      const q = btn.getAttribute("data-quality");
+      $$("[data-quality]").forEach((b) => b.setAttribute("aria-current", String(b === btn)));
+      if (qualityLabel) qualityLabel.textContent = q;
+      toast("Quality set to " + q);
+      closePops();
     });
-    followingList.appendChild(self);
-    // Hand the element to paintCounts so it tracks the header count.
-    railSelfCount = self.querySelector(".rail__viewers");
+  });
 
-    OTHER_CHANNELS.slice(0, 4).forEach((c) =>
-      followingList.appendChild(railItem({ ...c, live: rand(400, 62000) }))
-    );
+  // mirror toggle — the camera is mirrored by default like a selfie cam
+  const mirrorBtn = $("[data-mirror]");
+  if (mirrorBtn && video) {
+    mirrorBtn.addEventListener("click", () => {
+      const on = mirrorBtn.getAttribute("aria-checked") !== "true";
+      mirrorBtn.setAttribute("aria-checked", String(on));
+      video.style.transform = on ? "scaleX(-1)" : "none";
+      toast(on ? "Camera mirrored" : "Camera un-mirrored");
+    });
   }
 
-  if (recommendedList) {
-    OTHER_CHANNELS.slice(4).forEach((c) =>
-      recommendedList.appendChild(railItem({ ...c, live: rand(200, 31000) }))
-    );
-  }
+  /* ------------------------------------------------------- "your channel" */
+
+  $$("[data-go-self]").forEach((btn) =>
+    btn.addEventListener("click", () => {
+      renderChannel(SELF);
+      closePops();
+      closeBrowse();
+    })
+  );
 
   /* ---------------------------------------------------------------- chat */
 
@@ -246,15 +677,17 @@
 
   const EMOTES = ["KEKW", "PogU", "OMEGALUL", "monkaS", "EZ Clap", "Sadge", "catJAM"];
 
+  const chatEl = $("[data-chat]");
   const log = $("[data-chat-log]");
   const form = $("[data-chat-form]");
-  const input = $("[data-chat-input]");
-  const emoteBtn = $("[data-emote]");
   const MAX_MESSAGES = 150;
+  let autoscroll = true;
 
-  /** Autoscroll only when the reader hasn't scrolled up to read history. */
+  // Timestamps start hidden; the toggle flips a class rather than re-rendering.
+  if (chatEl) chatEl.classList.add("chat--no-timestamps");
+
   function scrollIfPinned() {
-    if (!log) return;
+    if (!log || !autoscroll) return;
     const nearBottom = log.scrollHeight - log.scrollTop - log.clientHeight < 60;
     if (nearBottom) log.scrollTop = log.scrollHeight;
   }
@@ -263,10 +696,20 @@
     while (log.children.length > MAX_MESSAGES) log.removeChild(log.firstChild);
   }
 
+  function timeStamp() {
+    const d = new Date();
+    return String(d.getHours()).padStart(2, "0") + ":" + String(d.getMinutes()).padStart(2, "0");
+  }
+
   function addMessage(author, text, opts = {}) {
     if (!log) return;
     const row = document.createElement("p");
     row.className = "msg" + (opts.own ? " msg--own" : "");
+
+    const time = document.createElement("span");
+    time.className = "msg__time";
+    time.textContent = timeStamp();
+    row.appendChild(time);
 
     if (opts.badge) {
       const badge = document.createElement("span");
@@ -301,6 +744,10 @@
     scrollIfPinned();
   }
 
+  function resetChat() {
+    if (log) log.textContent = "";
+  }
+
   function randomBadge() {
     const roll = Math.random();
     if (roll > 0.93) return "mod";
@@ -315,11 +762,7 @@
     addMessage(author, text, { badge: randomBadge() });
   }
 
-  // Seed the log so chat isn't empty on arrival, then keep it rolling at an
-  // irregular cadence — a fixed interval reads as obviously fake.
-  addSystemMessage(`Welcome to the ${s.streamer} channel!`);
-  for (let i = 0; i < 12; i++) fakeMessage();
-
+  // Rolling chat at an irregular cadence — a fixed interval reads as fake.
   (function loop() {
     setTimeout(() => {
       fakeMessage();
@@ -331,30 +774,75 @@
   // the viewer count, which is what counter.bump() is for.
   (function raidLoop() {
     setTimeout(() => {
-      const raider = pick(OTHER_CHANNELS).name;
+      const raider = pick(OTHERS).name;
       const size = rand(60, 900);
-      counter.bump(size);
+      if (counter) counter.bump(size);
       paintCounts();
       addSystemMessage(`${raider} is raiding with ${size.toLocaleString()} viewers!`);
       raidLoop();
     }, rand(45000, 110000));
   })();
 
-  if (form && input) {
+  if (form && chatInput) {
     form.addEventListener("submit", (e) => {
       e.preventDefault();
-      const text = input.value.trim();
+      const text = chatInput.value.trim();
       if (!text) return;
       addMessage(s.username, text, { own: true, badge: "sub" });
-      input.value = "";
+      chatInput.value = "";
       if (log) log.scrollTop = log.scrollHeight; // always follow your own message
     });
   }
 
-  if (emoteBtn && input) {
-    emoteBtn.addEventListener("click", () => {
-      input.value = (input.value.trim() + " " + pick(EMOTES)).trim() + " ";
-      input.focus();
+  // emote picker
+  const emoteGrid = $("[data-emote-grid]");
+  if (emoteGrid && chatInput) {
+    EMOTES.forEach((em) => {
+      const b = document.createElement("button");
+      b.type = "button";
+      b.className = "pop__item";
+      b.textContent = em;
+      b.addEventListener("click", () => {
+        chatInput.value = (chatInput.value.trim() + " " + em).trim() + " ";
+        chatInput.focus();
+        closePops();
+      });
+      emoteGrid.appendChild(b);
     });
   }
+
+  // chat settings
+  function bindCheck(sel, onChange) {
+    const btn = $(sel);
+    if (!btn) return;
+    btn.addEventListener("click", () => {
+      const on = btn.getAttribute("aria-checked") !== "true";
+      btn.setAttribute("aria-checked", String(on));
+      onChange(on);
+    });
+  }
+
+  bindCheck("[data-toggle-timestamps]", (on) => {
+    if (chatEl) chatEl.classList.toggle("chat--no-timestamps", !on);
+  });
+  bindCheck("[data-toggle-badges]", (on) => {
+    if (chatEl) chatEl.classList.toggle("chat--no-badges", !on);
+  });
+  bindCheck("[data-toggle-autoscroll]", (on) => {
+    autoscroll = on;
+    if (on) scrollIfPinned();
+  });
+
+  const clearChatBtn = $("[data-clear-chat]");
+  if (clearChatBtn) {
+    clearChatBtn.addEventListener("click", () => {
+      resetChat();
+      addSystemMessage("Chat cleared.");
+      closePops();
+    });
+  }
+
+  /* ---------------------------------------------------------------- boot */
+
+  renderChannel(SELF);
 })();

@@ -23,42 +23,80 @@
       </a>
 
       <nav class="topbar__nav" aria-label="Primary">
-        <a href="#" aria-current="page">Following</a>
-        <a href="#">Browse</a>
-        <a href="#">Categories</a>
+        <a href="#" data-nav="following" aria-current="page">Following</a>
+        <a href="#" data-nav="browse">Browse</a>
+        <a href="#" data-nav="categories">Categories</a>
       </nav>
 
-      <div class="topbar__search">
+      <form class="topbar__search" data-search-form role="search">
         <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
           <circle cx="11" cy="11" r="7" stroke="currentColor" stroke-width="2"/>
           <path d="M16.5 16.5L21 21" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
         </svg>
         <label class="visually-hidden" for="kick-search">Search channels</label>
-        <input id="kick-search" type="search" placeholder="Search channels and categories" />
-      </div>
+        <input id="kick-search" type="search" autocomplete="off" data-search
+               placeholder="Search channels and categories" />
+      </form>
 
       <div class="topbar__actions">
-        <button class="icon-btn" type="button" aria-label="Notifications">
-          <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
-            <path d="M18 8a6 6 0 10-12 0c0 6-2 7-2 7h16s-2-1-2-7z" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/>
-            <path d="M10.5 20a2 2 0 003 0" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
-          </svg>
-        </button>
-        <button class="icon-btn" type="button" aria-label="Get bits">
-          <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
-            <path d="M13 2L4 14h6l-1 8 9-12h-6l1-8z" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/>
-          </svg>
-        </button>
-        <span class="topbar__me" data-avatar-initial aria-hidden="true">?</span>
+        <!-- notifications -->
+        <div class="pop-wrap">
+          <button class="icon-btn" type="button" data-pop-toggle="notifs"
+                  aria-label="Notifications" aria-expanded="false">
+            <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
+              <path d="M18 8a6 6 0 10-12 0c0 6-2 7-2 7h16s-2-1-2-7z" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/>
+              <path d="M10.5 20a2 2 0 003 0" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+            </svg>
+            <span class="topbar__badge" data-notif-badge>3</span>
+          </button>
+          <div class="pop" data-pop="notifs" hidden>
+            <p class="pop__title">Notifications</p>
+            <div data-notif-list></div>
+            <div class="pop__sep"></div>
+            <button class="pop__item" type="button" data-notif-clear>Mark all as read</button>
+          </div>
+        </div>
+
+        <!-- bits / kicks -->
+        <div class="pop-wrap">
+          <button class="icon-btn" type="button" data-pop-toggle="bits"
+                  aria-label="Send kicks" aria-expanded="false">
+            <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
+              <path d="M13 2L4 14h6l-1 8 9-12h-6l1-8z" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/>
+            </svg>
+          </button>
+          <div class="pop" data-pop="bits" hidden>
+            <p class="pop__title">Send kicks</p>
+            <button class="pop__item" type="button" data-kicks="100">⚡ 100 kicks</button>
+            <button class="pop__item" type="button" data-kicks="500">⚡ 500 kicks</button>
+            <button class="pop__item" type="button" data-kicks="1000">⚡ 1,000 kicks</button>
+            <p class="pop__note">Simulated — no real currency involved.</p>
+          </div>
+        </div>
+
+        <!-- account -->
+        <div class="pop-wrap">
+          <button class="topbar__me" type="button" data-pop-toggle="account"
+                  data-avatar-initial aria-label="Your account" aria-expanded="false">?</button>
+          <div class="pop" data-pop="account" hidden>
+            <p class="pop__me" data-streamer>You</p>
+            <p class="pop__handle" data-username>@username</p>
+            <div class="pop__sep"></div>
+            <button class="pop__item" type="button" data-go-self>Your channel</button>
+            <button class="pop__item" type="button" data-stub="Subscriptions">Subscriptions</button>
+            <button class="pop__item" type="button" data-stub="Wallet">Wallet</button>
+            <button class="pop__item" type="button" data-stub="Settings">Settings</button>
+            <div class="pop__sep"></div>
+            <button class="pop__item" type="button" data-stub="Log out">Log out</button>
+          </div>
+        </div>
       </div>
     </header>
 
     <!-- ========================================================= left rail -->
     <aside class="rail" aria-label="Channels">
       <h2 class="rail__heading">Followed channels</h2>
-      <ul class="rail__list" data-rail-following>
-        <!-- The live channel (this one) is injected first by kick.js -->
-      </ul>
+      <ul class="rail__list" data-rail-following></ul>
 
       <h2 class="rail__heading">Recommended</h2>
       <ul class="rail__list" data-rail-recommended></ul>
@@ -66,7 +104,15 @@
 
     <!-- ======================================================= main column -->
     <main class="main">
-      <section class="player">
+      <!-- shown only while watching somebody else's channel -->
+      <div class="viewing" data-viewing-bar hidden>
+        <span class="viewing__text">
+          You're watching <strong data-viewing-name></strong>. Your own stream is still live.
+        </span>
+        <button class="viewing__back" type="button" data-go-self>Back to my channel</button>
+      </div>
+
+      <section class="player" data-player>
         <video data-camera autoplay muted playsinline></video>
 
         <div class="player__badges">
@@ -83,7 +129,7 @@
         <span class="badge-dark player__timer" data-timer>00:00</span>
 
         <div class="player__controls">
-          <button class="icon-btn" type="button" aria-label="Pause">
+          <button class="icon-btn" type="button" data-playpause aria-label="Pause">
             <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
               <path d="M9 5v14M15 5v14" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
             </svg>
@@ -98,14 +144,31 @@
           <input class="player__volume" id="kick-volume" type="range" min="0" max="100" value="0" />
 
           <span class="player__spacer"></span>
-          <span class="player__quality">1080p60</span>
-          <button class="icon-btn" type="button" aria-label="Settings">
-            <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
-              <circle cx="12" cy="12" r="3" stroke="currentColor" stroke-width="2"/>
-              <path d="M12 2v3M12 19v3M2 12h3M19 12h3M4.9 4.9l2.1 2.1M17 17l2.1 2.1M19.1 4.9L17 7M7 17l-2.1 2.1"
-                    stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
-            </svg>
-          </button>
+          <span class="player__quality" data-quality-label>1080p60</span>
+
+          <div class="pop-wrap">
+            <button class="icon-btn" type="button" data-pop-toggle="quality"
+                    aria-label="Stream settings" aria-expanded="false">
+              <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                <circle cx="12" cy="12" r="3" stroke="currentColor" stroke-width="2"/>
+                <path d="M12 2v3M12 19v3M2 12h3M19 12h3M4.9 4.9l2.1 2.1M17 17l2.1 2.1M19.1 4.9L17 7M7 17l-2.1 2.1"
+                      stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+              </svg>
+            </button>
+            <div class="pop pop--up" data-pop="quality" hidden>
+              <p class="pop__title">Quality</p>
+              <button class="pop__item" type="button" data-quality="1080p60" aria-current="true">1080p60 (source)</button>
+              <button class="pop__item" type="button" data-quality="720p60">720p60</button>
+              <button class="pop__item" type="button" data-quality="480p">480p</button>
+              <button class="pop__item" type="button" data-quality="360p">360p</button>
+              <button class="pop__item" type="button" data-quality="Auto">Auto</button>
+              <div class="pop__sep"></div>
+              <button class="pop__item" type="button" data-mirror aria-checked="true" role="menuitemcheckbox">
+                Mirror my camera
+              </button>
+            </div>
+          </div>
+
           <button class="icon-btn" type="button" data-fullscreen aria-label="Fullscreen">
             <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
               <path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5" stroke="currentColor" stroke-width="2"
@@ -126,12 +189,12 @@
       <!-- channel info under the player -->
       <section class="channel">
         <div class="channel__row">
-          <div class="channel__avatar" data-avatar-initial aria-hidden="true">?</div>
+          <div class="channel__avatar" data-channel-avatar aria-hidden="true">?</div>
 
           <div class="channel__info">
             <h1 class="channel__name">
-              <span data-streamer>Streamer</span>
-              <svg class="channel__verified" viewBox="0 0 24 24" fill="none" aria-label="Verified">
+              <span data-channel-name>Streamer</span>
+              <svg class="channel__verified" data-channel-verified viewBox="0 0 24 24" fill="none" aria-label="Verified">
                 <path d="M12 2l2.4 1.8 3-.2.9 2.9 2.5 1.7-1.2 2.8 1.2 2.8-2.5 1.7-.9 2.9-3-.2L12 22l-2.4-1.8-3 .2-.9-2.9L3.2 15.8 4.4 13 3.2 10.2l2.5-1.7.9-2.9 3 .2L12 2z"
                       fill="currentColor"/>
                 <path d="M8.5 12.2l2.4 2.3 4.6-4.8" stroke="#0b0e0f" stroke-width="2"
@@ -140,9 +203,8 @@
             </h1>
             <p class="channel__title" data-stream-title>Live now</p>
             <div class="channel__tags">
-              <span class="tag tag--category">Just Chatting</span>
+              <span class="tag tag--category" data-channel-game>Just Chatting</span>
               <span class="tag">English</span>
-              <span class="tag">IRL</span>
               <span class="tag">Drops enabled</span>
             </div>
           </div>
@@ -162,7 +224,7 @@
               </svg>
               Subscribe
             </button>
-            <button class="icon-btn" type="button" aria-label="Share">
+            <button class="icon-btn" type="button" data-share aria-label="Share">
               <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
                 <circle cx="18" cy="5" r="3" stroke="currentColor" stroke-width="2"/>
                 <circle cx="6" cy="12" r="3" stroke="currentColor" stroke-width="2"/>
@@ -170,13 +232,22 @@
                 <path d="M8.6 10.6l6.8-4.2M8.6 13.4l6.8 4.2" stroke="currentColor" stroke-width="2"/>
               </svg>
             </button>
-            <button class="icon-btn" type="button" aria-label="More options">
-              <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
-                <circle cx="5" cy="12" r="1.8" fill="currentColor"/>
-                <circle cx="12" cy="12" r="1.8" fill="currentColor"/>
-                <circle cx="19" cy="12" r="1.8" fill="currentColor"/>
-              </svg>
-            </button>
+            <div class="pop-wrap">
+              <button class="icon-btn" type="button" data-pop-toggle="more"
+                      aria-label="More options" aria-expanded="false">
+                <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                  <circle cx="5" cy="12" r="1.8" fill="currentColor"/>
+                  <circle cx="12" cy="12" r="1.8" fill="currentColor"/>
+                  <circle cx="19" cy="12" r="1.8" fill="currentColor"/>
+                </svg>
+              </button>
+              <div class="pop" data-pop="more" hidden>
+                <button class="pop__item" type="button" data-theatre>Theatre mode</button>
+                <button class="pop__item" type="button" data-copy-link>Copy channel link</button>
+                <button class="pop__item" type="button" data-stub="Clip created">Create clip</button>
+                <button class="pop__item" type="button" data-stub="Report sent">Report channel</button>
+              </div>
+            </div>
           </div>
         </div>
 
@@ -190,7 +261,7 @@
             <span class="stat__label">Watching</span>
           </div>
           <div class="stat">
-            <span class="stat__value" data-username>@username</span>
+            <span class="stat__value" data-channel-handle>@username</span>
             <span class="stat__label">Handle</span>
           </div>
           <div class="stat">
@@ -198,20 +269,45 @@
             <span class="stat__label">Uptime</span>
           </div>
         </div>
+
+        <div class="about">
+          <h2 class="about__head">About <span data-channel-name>Streamer</span></h2>
+          <p class="about__bio" data-channel-bio></p>
+          <div class="about__socials">
+            <button class="tag" type="button" data-stub="X profile">𝕏 / Twitter</button>
+            <button class="tag" type="button" data-stub="Discord invite">Discord</button>
+            <button class="tag" type="button" data-stub="Instagram profile">Instagram</button>
+            <button class="tag" type="button" data-stub="Merch store">Merch</button>
+          </div>
+        </div>
       </section>
     </main>
 
     <!-- ============================================================== chat -->
-    <section class="chat" aria-label="Stream chat">
+    <section class="chat" data-chat aria-label="Stream chat">
       <header class="chat__header">
         <span class="chat__title">Stream Chat</span>
         <span class="chat__count"><span data-chatters>0</span> chatting</span>
-        <button class="icon-btn" type="button" aria-label="Chat settings">
-          <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
-            <circle cx="12" cy="12" r="3" stroke="currentColor" stroke-width="2"/>
-            <path d="M12 2v3M12 19v3M2 12h3M19 12h3" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
-          </svg>
-        </button>
+        <div class="pop-wrap">
+          <button class="icon-btn" type="button" data-pop-toggle="chatset"
+                  aria-label="Chat settings" aria-expanded="false">
+            <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
+              <circle cx="12" cy="12" r="3" stroke="currentColor" stroke-width="2"/>
+              <path d="M12 2v3M12 19v3M2 12h3M19 12h3" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+            </svg>
+          </button>
+          <div class="pop" data-pop="chatset" hidden>
+            <p class="pop__title">Chat settings</p>
+            <button class="pop__item" type="button" role="menuitemcheckbox"
+                    data-toggle-timestamps aria-checked="false">Show timestamps</button>
+            <button class="pop__item" type="button" role="menuitemcheckbox"
+                    data-toggle-badges aria-checked="true">Show badges</button>
+            <button class="pop__item" type="button" role="menuitemcheckbox"
+                    data-toggle-autoscroll aria-checked="true">Auto-scroll</button>
+            <div class="pop__sep"></div>
+            <button class="pop__item" type="button" data-clear-chat>Clear chat</button>
+          </div>
+        </div>
       </header>
 
       <div class="chat__log" data-chat-log role="log" aria-live="polite" aria-relevant="additions"></div>
@@ -221,20 +317,46 @@
           <label class="visually-hidden" for="kick-chat-input">Send a message</label>
           <input id="kick-chat-input" type="text" maxlength="200" autocomplete="off"
                  placeholder="Send a message..." data-chat-input />
-          <button class="icon-btn" type="button" data-emote aria-label="Insert emote">
-            <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
-              <circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="2"/>
-              <path d="M8.5 14a4.2 4.2 0 007 0" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
-              <circle cx="9" cy="10" r="1.1" fill="currentColor"/>
-              <circle cx="15" cy="10" r="1.1" fill="currentColor"/>
-            </svg>
-          </button>
+          <div class="pop-wrap">
+            <button class="icon-btn" type="button" data-pop-toggle="emotes"
+                    aria-label="Insert emote" aria-expanded="false">
+              <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                <circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="2"/>
+                <path d="M8.5 14a4.2 4.2 0 007 0" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                <circle cx="9" cy="10" r="1.1" fill="currentColor"/>
+                <circle cx="15" cy="10" r="1.1" fill="currentColor"/>
+              </svg>
+            </button>
+            <div class="pop pop--up" data-pop="emotes" hidden>
+              <p class="pop__title">Emotes</p>
+              <div data-emote-grid></div>
+            </div>
+          </div>
           <button class="chat__send" type="submit">Chat</button>
         </div>
         <p class="chat__footnote">Be nice. Simulated chat — nobody is really watching.</p>
       </form>
     </section>
 
+    <!-- ================================================== browse overlay -->
+    <div class="browse" data-browse hidden>
+      <div class="browse__panel" role="dialog" aria-modal="true" aria-label="Browse channels">
+        <header class="browse__head">
+          <h2 data-browse-title>Browse channels</h2>
+          <label class="visually-hidden" for="kick-browse-filter">Filter channels</label>
+          <input id="kick-browse-filter" type="search" autocomplete="off"
+                 data-browse-filter placeholder="Filter by name or category" />
+          <button class="icon-btn" type="button" data-browse-close aria-label="Close browse">
+            <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
+              <path d="M6 6l12 12M18 6L6 18" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+            </svg>
+          </button>
+        </header>
+        <div class="browse__grid" data-browse-grid></div>
+      </div>
+    </div>
+
+    <div class="toast-region" data-toasts aria-live="polite"></div>
   </div>
 
   <script src="../assets/js/platforms.js"></script>
