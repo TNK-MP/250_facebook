@@ -1,0 +1,4 @@
+.playwright-mcp/
+*.png
+/tmp/golive_server.log
+.DS_Store

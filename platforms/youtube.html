@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>YouTube Live — GoLive</title>
+  <link rel="stylesheet" href="../assets/css/base.css" />
+  <link rel="stylesheet" href="../assets/css/stream-stub.css" />
+  <!--
+    ============================================================
+    YouTube Live — BUILD YOUR PLATFORM LOOK HERE
+    ------------------------------------------------------------
+    This is a working starter: the camera turns on and the
+    username / streamer name are wired up. Your job is to make
+    everything below LOOK like YouTube Live.
+
+    You own these files ONLY (no merge conflicts with others):
+      platforms/youtube.html
+      assets/js/platforms/youtube.js
+      assets/css/youtube.css   (create this and link it above)
+
+    Read data with:  const s = GoLive.session();
+                      s.username, s.streamer, s.platform
+    Start the cam:   GoLive.startCamera(videoEl)
+    See assets/js/platforms/youtube.js for the wiring.
+    ============================================================
+  -->
+</head>
+<body>
+  <main class="stub">
+    <header class="stub__bar">
+      <span class="dot"></span>
+      <span class="stub__live">LIVE</span>
+      <span class="stub__platform" data-platform-name>YouTube Live</span>
+      <span class="stub__timer" data-timer>00:00</span>
+    </header>
+
+    <section class="stub__stage">
+      <div class="stub__video-wrap">
+        <video data-camera autoplay muted playsinline></video>
+        <div class="stub__overlay">
+          <strong data-streamer>Streamer</strong>
+          <span data-username>@username</span>
+        </div>
+        <div class="stub__camera-error" data-camera-error>
+          Camera unavailable. Allow camera access and reload.
+        </div>
+      </div>
+    </section>
+
+    <footer class="stub__todo">
+      TODO: replace this placeholder with the real YouTube Live interface —
+      edit <code>platforms/youtube.html</code> and <code>assets/css/youtube.css</code>.
+    </footer>
+  </main>
+
+  <script src="../assets/js/platforms.js"></script>
+  <script src="../assets/js/stream-session.js"></script>
+  <script src="../assets/js/platforms/youtube.js"></script>
+</body>
+</html>
