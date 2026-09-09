@@ -36,6 +36,7 @@
 
     const username = form.username.value.trim();
     const streamer = form.streamer.value.trim();
+    const viewersRaw = form.viewers.value.trim();
     const platform = (form.querySelector('input[name="platform"]:checked') || {}).value;
 
     let ok = true;
@@ -47,6 +48,11 @@
       setError("streamer", "Please enter the streamer's display name.");
       ok = false;
     }
+    const viewers = Math.floor(Number(viewersRaw));
+    if (viewersRaw !== "" && (!Number.isFinite(viewers) || viewers < 0)) {
+      setError("viewers", "Enter a whole number of viewers (0 or more).");
+      ok = false;
+    }
     if (!platform) {
       setError("platform", "Please choose a platform.");
       ok = false;
@@ -55,6 +61,7 @@
 
     const target = window.GoLive.getPlatform(platform);
     const params = new URLSearchParams({ username, streamer });
+    if (viewersRaw !== "") params.set("viewers", String(viewers));
     window.location.href = `${target.page}?${params.toString()}`;
   });
 })();
