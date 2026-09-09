@@ -118,9 +118,233 @@
 
   const video = $("[data-camera]");
   const errorEl = $("[data-camera-error]");
+  let cameraFailed = false;
+
+  /** The camera warning is about YOUR channel, so hide it while watching others. */
+  function syncCameraError() {
+    if (!errorEl) return;
+    const onOwnChannel = !current || current.self;
+    errorEl.style.display = cameraFailed && onOwnChannel ? "grid" : "none";
+  }
+
   GoLive.startCamera(video).catch((err) => {
     console.error("Camera error:", err);
-    if (errorEl) errorEl.style.display = "grid";
+    cameraFailed = true;
+    syncCameraError();
+  });
+
+  /* ------------------------------------------------- simulated feed (canvas)
+   *
+   * Your own channel shows the webcam. Every other channel needs *something*
+   * in the player, and this demo deliberately talks to no real service — so
+   * their "feed" is drawn here: a scene themed to the channel's own colour,
+   * with a facecam box, drifting light, and an audio meter that reacts.
+   */
+
+  const sim = $("[data-sim]");
+  const simCtx = sim ? sim.getContext("2d") : null;
+  let simChannel = null; // non-null while the canvas is on screen
+  let simRaf = null;
+  let simClock = 0;
+  let simLast = 0;
+  let simW = 0;
+  let simH = 0;
+
+  function sizeSim() {
+    if (!sim || !simCtx) return;
+    const rect = sim.getBoundingClientRect();
+    simW = Math.max(1, Math.round(rect.width));
+    simH = Math.max(1, Math.round(rect.height));
+    const dpr = Math.min(window.devicePixelRatio || 1, 2);
+    sim.width = Math.round(simW * dpr);
+    sim.height = Math.round(simH * dpr);
+    simCtx.setTransform(dpr, 0, 0, dpr, 0, 0); // draw in CSS pixels
+  }
+
+  function roundRect(ctx, x, y, w, h, r) {
+    const rr = Math.min(r, w / 2, h / 2);
+    ctx.beginPath();
+    ctx.moveTo(x + rr, y);
+    ctx.arcTo(x + w, y, x + w, y + h, rr);
+    ctx.arcTo(x + w, y + h, x, y + h, rr);
+    ctx.arcTo(x, y + h, x, y, rr);
+    ctx.arcTo(x, y, x + w, y, rr);
+    ctx.closePath();
+  }
+
+  function drawSim(t) {
+    if (!simCtx || !simChannel) return;
+    const ctx = simCtx;
+    const w = simW;
+    const h = simH;
+    const hue = hueFor(simChannel.name);
+
+    // backdrop: slow two-tone wash in the channel's hue
+    const bg = ctx.createLinearGradient(0, 0, w, h);
+    bg.addColorStop(0, `hsl(${(hue + Math.sin(t / 7) * 12).toFixed(1)} 55% 17%)`);
+    bg.addColorStop(1, "#07090a");
+    ctx.fillStyle = bg;
+    ctx.fillRect(0, 0, w, h);
+
+    // drifting light blobs
+    ctx.globalCompositeOperation = "lighter";
+    for (let i = 0; i < 3; i++) {
+      const ph = t * (0.16 + i * 0.05) + i * 2.1;
+      const cx = w * (0.5 + 0.34 * Math.cos(ph));
+      const cy = h * (0.5 + 0.3 * Math.sin(ph * 1.3));
+      const rad = Math.min(w, h) * (0.3 + 0.05 * Math.sin(t + i));
+      const g = ctx.createRadialGradient(cx, cy, 0, cx, cy, rad);
+      g.addColorStop(0, `hsla(${(hue + i * 40) % 360} 90% 60% / 0.20)`);
+      g.addColorStop(1, "hsla(0 0% 0% / 0)");
+      ctx.fillStyle = g;
+      ctx.fillRect(0, 0, w, h);
+    }
+    ctx.globalCompositeOperation = "source-over";
+
+    // faint scanlines scrolling upward — reads as "video"
+    ctx.fillStyle = "rgba(255,255,255,0.022)";
+    const offset = (t * 26) % 6;
+    for (let y = -offset; y < h; y += 6) ctx.fillRect(0, y, w, 2);
+
+    // centre plate: avatar + name + category
+    const plateW = Math.min(w * 0.62, 420);
+    const plateH = Math.min(h * 0.36, 150);
+    const px = (w - plateW) / 2;
+    const py = (h - plateH) / 2;
+    ctx.fillStyle = "rgba(6,8,9,0.55)";
+    roundRect(ctx, px, py, plateW, plateH, 16);
+    ctx.fill();
+
+    const av = Math.min(plateH * 0.52, 74);
+    const ax = px + 26;
+    const ay = py + (plateH - av) / 2;
+    ctx.fillStyle = `hsl(${hue} 85% 62%)`;
+    roundRect(ctx, ax, ay, av, av, av * 0.3);
+    ctx.fill();
+
+    ctx.fillStyle = "#0b0e0f";
+    ctx.font = `900 ${Math.round(av * 0.5)}px ${
+      "system-ui, -apple-system, Segoe UI, Roboto, sans-serif"
+    }`;
+    ctx.textAlign = "center";
+    ctx.textBaseline = "middle";
+    ctx.fillText(initial(simChannel.name), ax + av / 2, ay + av / 2 + 1);
+
+    ctx.textAlign = "left";
+    ctx.fillStyle = "#ffffff";
+    ctx.font = `800 ${Math.round(Math.min(plateH * 0.2, 24))}px ${
+      "system-ui, -apple-system, Segoe UI, Roboto, sans-serif"
+    }`;
+    ctx.fillText(simChannel.name, ax + av + 18, py + plateH * 0.42);
+
+    ctx.fillStyle = "rgba(255,255,255,0.62)";
+    ctx.font = `600 ${Math.round(Math.min(plateH * 0.14, 15))}px ${
+      "system-ui, -apple-system, Segoe UI, Roboto, sans-serif"
+    }`;
+    ctx.fillText(simChannel.game, ax + av + 18, py + plateH * 0.62);
+
+    ctx.fillStyle = "rgba(255,255,255,0.34)";
+    ctx.font = `500 ${Math.round(Math.min(plateH * 0.12, 13))}px ${
+      "system-ui, -apple-system, Segoe UI, Roboto, sans-serif"
+    }`;
+    ctx.fillText("simulated feed", ax + av + 18, py + plateH * 0.8);
+
+    // facecam box, bottom-left, with a bobbing silhouette
+    const camW = Math.min(w * 0.2, 150);
+    const camH = camW * 0.62;
+    const cxx = 20;
+    const cyy = h - camH - 58;
+    ctx.fillStyle = "rgba(0,0,0,0.5)";
+    roundRect(ctx, cxx, cyy, camW, camH, 10);
+    ctx.fill();
+    ctx.strokeStyle = `hsla(${hue} 90% 60% / 0.5)`;
+    ctx.lineWidth = 1.5;
+    ctx.stroke();
+
+    const bob = Math.sin(t * 1.7) * 3;
+    const headR = camH * 0.2;
+    ctx.fillStyle = `hsla(${hue} 60% 70% / 0.55)`;
+    ctx.beginPath();
+    ctx.arc(cxx + camW / 2, cyy + camH * 0.42 + bob, headR, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.beginPath();
+    ctx.ellipse(cxx + camW / 2, cyy + camH * 0.95 + bob, headR * 1.9, headR * 1.5, 0, Math.PI, 0);
+    ctx.fill();
+
+    // audio meter along the bottom
+    const bars = 48;
+    const gap = 2;
+    const bw = Math.max(1, (w - 40 - gap * (bars - 1)) / bars);
+    for (let i = 0; i < bars; i++) {
+      // squared/cubed sines give peaks and troughs instead of a flat band
+      const a = Math.abs(Math.sin(t * 3.1 + i * 0.55));
+      const b = Math.abs(Math.sin(t * 1.7 + i * 1.1));
+      const amp = 0.08 + 0.55 * a * a + 0.3 * b * b * b;
+      const bh = 3 + 26 * Math.min(1, amp);
+      ctx.fillStyle = `hsla(${hue} 90% 58% / ${(0.22 + amp * 0.45).toFixed(3)})`;
+      ctx.fillRect(20 + i * (bw + gap), h - 20 - bh, bw, bh);
+    }
+
+    // vignette
+    const vg = ctx.createRadialGradient(w / 2, h / 2, Math.min(w, h) * 0.32, w / 2, h / 2, Math.max(w, h) * 0.72);
+    vg.addColorStop(0, "rgba(0,0,0,0)");
+    vg.addColorStop(1, "rgba(0,0,0,0.55)");
+    ctx.fillStyle = vg;
+    ctx.fillRect(0, 0, w, h);
+  }
+
+  function simFrame(ts) {
+    if (!simLast) simLast = ts;
+    const dt = Math.min(100, ts - simLast); // clamp after tab-away
+    simLast = ts;
+    simClock += dt;
+    drawSim(simClock / 1000);
+    simRaf = requestAnimationFrame(simFrame);
+  }
+
+  function simRun() {
+    if (simRaf || !simChannel) return;
+    simLast = 0;
+    simRaf = requestAnimationFrame(simFrame);
+  }
+
+  function simHalt() {
+    if (!simRaf) return;
+    cancelAnimationFrame(simRaf);
+    simRaf = null;
+  }
+
+  /** Show the canvas feed for someone else's channel. */
+  function showSim(ch) {
+    if (!sim || !simCtx) return;
+    simChannel = ch;
+    sim.hidden = false;
+    if (video) video.hidden = true;
+    sizeSim();
+    drawSim(simClock / 1000); // paint one frame immediately
+    simRun();
+  }
+
+  /** Back to the webcam. */
+  function hideSim() {
+    simHalt();
+    simChannel = null;
+    if (sim) sim.hidden = true;
+    if (video) video.hidden = false;
+  }
+
+  window.addEventListener("resize", () => {
+    if (!simChannel) return;
+    sizeSim();
+    drawSim(simClock / 1000);
+  });
+  document.addEventListener("fullscreenchange", () => {
+    if (!simChannel) return;
+    // the canvas box changes size on the way in and out of fullscreen
+    setTimeout(() => {
+      sizeSim();
+      drawSim(simClock / 1000);
+    }, 60);
   });
 
   /* --------------------------------------------------------- count painting */
@@ -199,6 +423,12 @@
         c.railAvatar.style.background = c.self ? "var(--kick-green)" : colorFor(c.name);
       }
     });
+
+    // swap the feed: your own channel is the webcam, everyone else is canvas
+    if (ch.self) hideSim();
+    else showSim(ch);
+    syncCameraError();
+    setPaused(false); // a fresh channel always starts playing
 
     counter = GoLive.startViewerCount(null, { start: ch.viewers, interval: 2500 });
     paintCounts();
@@ -602,19 +832,27 @@
   }
 
   const playPauseBtn = $("[data-playpause]");
-  if (playPauseBtn && video) {
-    playPauseBtn.addEventListener("click", () => {
-      const paused = video.paused;
-      if (paused) video.play().catch(() => {});
-      else video.pause();
-      // state flips after the call, so read it fresh
-      const nowPaused = !paused;
+  let isPaused = false;
+
+  /** Pause/resume whichever feed is on screen — the webcam or the canvas. */
+  function setPaused(next) {
+    isPaused = next;
+    if (simChannel) {
+      if (next) simHalt();
+      else simRun();
+    } else if (video) {
+      if (next) video.pause();
+      else video.play().catch(() => {});
+    }
+    if (playPauseBtn) {
       const svg = playPauseBtn.querySelector("svg");
-      if (svg) svg.innerHTML = nowPaused ? ICON_PLAY : ICON_PAUSE;
-      playPauseBtn.setAttribute("aria-label", nowPaused ? "Play" : "Pause");
-      if (playerEl) playerEl.classList.toggle("player--paused", nowPaused);
-    });
+      if (svg) svg.innerHTML = next ? ICON_PLAY : ICON_PAUSE;
+      playPauseBtn.setAttribute("aria-label", next ? "Play" : "Pause");
+    }
+    if (playerEl) playerEl.classList.toggle("player--paused", next);
   }
+
+  if (playPauseBtn) playPauseBtn.addEventListener("click", () => setPaused(!isPaused));
 
   const fsBtn = $("[data-fullscreen]");
   if (fsBtn) {
@@ -643,7 +881,8 @@
       const on = mirrorBtn.getAttribute("aria-checked") !== "true";
       mirrorBtn.setAttribute("aria-checked", String(on));
       video.style.transform = on ? "scaleX(-1)" : "none";
-      toast(on ? "Camera mirrored" : "Camera un-mirrored");
+      if (simChannel) toast("Mirror saved — it applies to your own channel");
+      else toast(on ? "Camera mirrored" : "Camera un-mirrored");
     });
   }
 

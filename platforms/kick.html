@@ -114,6 +114,8 @@
 
       <section class="player" data-player>
         <video data-camera autoplay muted playsinline></video>
+        <!-- stands in for another streamer's feed; your own channel uses the camera -->
+        <canvas class="player__sim" data-sim hidden aria-label="Simulated stream"></canvas>
 
         <div class="player__badges">
           <span class="badge-live">LIVE</span>

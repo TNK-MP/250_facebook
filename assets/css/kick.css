@@ -289,6 +289,20 @@ body {
   display: block;
 }
 
+/* `hidden` has to beat the display:block above when we swap in the canvas */
+.player video[hidden],
+.player__sim[hidden] {
+  display: none;
+}
+
+.player__sim {
+  position: absolute;
+  inset: 0;
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
 .player__badges {
   position: absolute;
   top: 14px;
