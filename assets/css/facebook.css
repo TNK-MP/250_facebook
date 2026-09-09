@@ -1,0 +1,531 @@
+/* Facebook Live look for GoLive Studio.
+ * Built to platforms/facebook.spec.md. All overlays sit over the webcam video;
+ * the center frame is kept clear. Motion is transform/opacity only. */
+
+:root {
+  --fb-blue: #1877f2;
+  --fb-blue-hover: #166fe5;
+  --fb-live: #fa383e; /* Facebook's live red */
+  --fb-ink: #e4e6eb; /* FB dark-mode primary text */
+  --fb-ink-dim: #b0b3b8; /* FB dark-mode secondary text */
+  --fb-glass: rgba(20, 21, 23, 0.55);
+  --fb-glass-strong: rgba(20, 21, 23, 0.82);
+  --fb-hairline: rgba(255, 255, 255, 0.12);
+  --fb-font: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica,
+    Arial, sans-serif;
+}
+
+.fb {
+  margin: 0;
+  height: 100vh;
+  height: 100dvh;
+  overflow: hidden;
+  background: #000;
+  color: var(--fb-ink);
+  font-family: var(--fb-font);
+}
+
+.fb-stage {
+  position: relative;
+  width: 100%;
+  height: 100vh;
+  height: 100dvh;
+  overflow: hidden;
+}
+
+/* ---- Video ---- */
+.fb-video {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  background: #18191a;
+  transform: scaleX(-1); /* mirror like a selfie cam */
+}
+
+.fb-camera-error {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  padding: 24px;
+  text-align: center;
+  color: var(--fb-ink-dim);
+  background: #18191a;
+  font-size: 15px;
+}
+.fb-camera-error[hidden] { display: none; }
+
+/* Readability gradients top & bottom */
+.fb-stage::before,
+.fb-stage::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  pointer-events: none;
+  z-index: 1;
+}
+.fb-stage::before {
+  top: 0;
+  height: 170px;
+  background: linear-gradient(
+    to bottom,
+    rgba(0, 0, 0, 0.6),
+    rgba(0, 0, 0, 0.28) 45%,
+    transparent
+  );
+}
+.fb-stage::after {
+  bottom: 0;
+  height: 340px;
+  background: linear-gradient(
+    to top,
+    rgba(0, 0, 0, 0.78),
+    rgba(0, 0, 0, 0.32) 42%,
+    transparent
+  );
+}
+
+.fb-stage > *:not(.fb-video):not(.fb-camera-error) { z-index: 2; }
+
+/* Visible keyboard focus across all interactive controls (quality floor). */
+.fb button:focus-visible,
+.fb input:focus-visible {
+  outline: 2px solid #fff;
+  outline-offset: 2px;
+}
+
+/* ---- Top-left status ---- */
+.fb-status {
+  position: absolute;
+  top: 16px;
+  left: 16px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+}
+.fb-live-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: var(--fb-live);
+  color: #fff;
+  font-weight: 800;
+  font-size: 12px;
+  letter-spacing: 0.8px;
+  padding: 5px 10px;
+  border-radius: 6px;
+  box-shadow: 0 2px 10px rgba(250, 56, 62, 0.35);
+}
+.fb-live-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: #fff;
+  animation: fb-pulse 1.4s ease-in-out infinite;
+}
+.fb-viewers,
+.fb-likes {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  background: var(--fb-glass);
+  backdrop-filter: blur(6px);
+  color: #fff;
+  font-weight: 600;
+  font-size: 12px;
+  padding: 5px 10px;
+  border-radius: 6px;
+}
+.fb-viewers [data-viewers] { font-weight: 700; }
+.fb-likes { gap: 4px; }
+.fb-likes[hidden] { display: none; }
+.fb-likes-emoji { font-size: 12px; line-height: 1; }
+.fb-eye { width: 15px; height: 15px; color: #fff; }
+
+/* ---- Top identity bar ---- */
+.fb-topbar {
+  position: absolute;
+  top: 14px;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  max-width: min(92vw, 520px);
+  padding: 7px 8px 7px 7px;
+  background: var(--fb-glass);
+  backdrop-filter: blur(8px);
+  border-radius: 999px;
+}
+.fb-avatar {
+  flex: none;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  font-weight: 700;
+  font-size: 16px;
+  color: #fff;
+  background: var(--fb-blue);
+  box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.15);
+}
+.fb-avatar--sm { width: 32px; height: 32px; font-size: 13px; box-shadow: none; }
+.fb-ident { display: flex; flex-direction: column; line-height: 1.25; min-width: 0; }
+.fb-name {
+  font-size: 15px;
+  font-weight: 700;
+  color: #fff;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.fb-sub { font-size: 12px; color: var(--fb-ink-dim); white-space: nowrap; }
+.fb-dot-sep { margin: 0 3px; }
+.fb-follow {
+  flex: none;
+  margin-left: 4px;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  background: var(--fb-blue);
+  color: #fff;
+  border: 0;
+  font-family: inherit;
+  font-weight: 700;
+  font-size: 13px;
+  padding: 8px 14px;
+  border-radius: 999px;
+  cursor: pointer;
+  transition: background 0.15s, transform 0.08s;
+}
+.fb-follow:hover { background: var(--fb-blue-hover); }
+.fb-follow:active { transform: scale(0.96); }
+.fb-follow.is-following {
+  background: rgba(255, 255, 255, 0.16);
+  color: var(--fb-ink);
+}
+.fb-follow.is-following svg { display: none; }
+
+/* ---- Comments ---- */
+.fb-comments {
+  position: absolute;
+  left: 16px;
+  bottom: 128px;
+  width: min(58vw, 400px);
+  max-height: 46vh;
+  display: flex;
+  align-items: flex-end;
+  overflow: hidden;
+  -webkit-mask-image: linear-gradient(to top, #000 78%, transparent);
+  mask-image: linear-gradient(to top, #000 78%, transparent);
+}
+.fb-comment-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.fb-comment {
+  display: flex;
+  gap: 8px;
+  align-items: flex-start;
+  animation: fb-comment-in 0.32s cubic-bezier(0.22, 1, 0.36, 1);
+}
+.fb-comment-body {
+  background: var(--fb-glass-strong);
+  backdrop-filter: blur(4px);
+  border: 1px solid var(--fb-hairline);
+  border-radius: 16px;
+  padding: 7px 12px;
+  font-size: 13.5px;
+  line-height: 1.35;
+  max-width: 100%;
+  box-shadow: 0 1px 10px rgba(0, 0, 0, 0.28);
+}
+.fb-comment-name { font-weight: 700; color: #fff; margin-right: 6px; }
+.fb-comment-text { color: var(--fb-ink); word-break: break-word; }
+.fb-comment.is-you .fb-comment-body {
+  background: rgba(24, 119, 242, 0.85);
+}
+
+/* ---- Reaction lane (floating emojis) ---- */
+.fb-reaction-lane {
+  position: absolute;
+  right: 14px;
+  bottom: 120px;
+  width: 72px;
+  height: 52vh;
+  pointer-events: none;
+  overflow: hidden;
+}
+.fb-float {
+  position: absolute;
+  bottom: 0;
+  left: 12px;
+  font-size: 30px;
+  line-height: 1;
+  will-change: transform, opacity;
+  animation: fb-float-up var(--dur, 2.8s) ease-out forwards;
+  filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.4));
+}
+
+/* ---- Bottom: composer + actions ---- */
+.fb-bottom {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  padding: 12px 16px calc(12px + env(safe-area-inset-bottom));
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.fb-composer {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: min(72vw, 460px);
+}
+.fb-composer-input {
+  flex: 1;
+  min-width: 0;
+  background: var(--fb-glass-strong);
+  backdrop-filter: blur(6px);
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  border-radius: 999px;
+  color: #fff;
+  font-family: inherit;
+  font-size: 14px;
+  padding: 10px 16px;
+  outline: none;
+}
+.fb-composer-input::placeholder { color: var(--fb-ink-dim); }
+.fb-composer-input:focus { border-color: var(--fb-blue); }
+.fb-send {
+  flex: none;
+  width: 40px;
+  height: 40px;
+  border: 0;
+  border-radius: 50%;
+  background: var(--fb-blue);
+  color: #fff;
+  cursor: pointer;
+  display: grid;
+  place-items: center;
+  transition: background 0.15s, transform 0.08s;
+}
+.fb-send:hover { background: var(--fb-blue-hover); }
+.fb-send:active { transform: scale(0.94); }
+
+.fb-actionbar {
+  display: flex;
+  gap: 8px;
+  background: var(--fb-glass);
+  backdrop-filter: blur(8px);
+  border-radius: 12px;
+  padding: 6px;
+  width: fit-content;
+}
+.fb-action {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  background: transparent;
+  border: 0;
+  color: var(--fb-ink);
+  font-family: inherit;
+  font-weight: 600;
+  font-size: 14px;
+  padding: 9px 16px;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+.fb-action:hover { background: rgba(255, 255, 255, 0.1); }
+.fb-action svg { color: var(--fb-ink-dim); }
+.fb-action-emoji { font-size: 18px; line-height: 1; }
+.fb-action.is-active { color: var(--fb-blue); }
+.fb-action.is-active [data-like-label] { color: var(--fb-blue); }
+
+/* ---- Reaction picker ---- */
+.fb-like-wrap { position: relative; }
+.fb-reaction-picker {
+  position: absolute;
+  bottom: calc(100% + 8px);
+  left: 0;
+  display: flex;
+  gap: 2px;
+  padding: 6px;
+  background: #242526;
+  border-radius: 999px;
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.45);
+  opacity: 0;
+  transform: translateY(6px) scale(0.9);
+  transform-origin: bottom left;
+  pointer-events: none;
+  transition: opacity 0.16s, transform 0.16s;
+}
+.fb-like-wrap:hover .fb-reaction-picker,
+.fb-like-wrap:focus-within .fb-reaction-picker,
+.fb-reaction-picker.is-open {
+  opacity: 1;
+  transform: translateY(0) scale(1);
+  pointer-events: auto;
+}
+.fb-reaction-picker button {
+  position: relative;
+  border: 0;
+  background: transparent;
+  font-size: 28px;
+  line-height: 1;
+  padding: 4px;
+  cursor: pointer;
+  border-radius: 50%;
+  transition: transform 0.16s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+.fb-reaction-picker button:hover,
+.fb-reaction-picker button:focus-visible {
+  transform: scale(1.45) translateY(-6px);
+  outline: none;
+}
+/* FB-style label bubble above the emoji on hover/focus */
+.fb-reaction-picker button::after {
+  content: attr(data-label);
+  position: absolute;
+  bottom: calc(100% + 6px);
+  left: 50%;
+  transform: translateX(-50%) scale(0.8);
+  background: #000;
+  color: #fff;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.2px;
+  padding: 3px 8px;
+  border-radius: 999px;
+  white-space: nowrap;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.12s, transform 0.12s;
+}
+.fb-reaction-picker button:hover::after,
+.fb-reaction-picker button:focus-visible::after {
+  opacity: 1;
+  transform: translateX(-50%) scale(1);
+}
+
+/* ---- Keyframes ---- */
+@keyframes fb-pulse {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.4; transform: scale(0.7); }
+}
+@keyframes fb-comment-in {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+@keyframes fb-float-up {
+  0% { transform: translateY(0) scale(0.6); opacity: 0; }
+  12% { opacity: 1; }
+  40% { transform: translate(var(--x1, -8px), -40%) scale(1.1); }
+  70% { transform: translate(var(--x2, 10px), -75%) scale(1); }
+  100% { transform: translate(var(--x3, -4px), -100%) scale(0.9); opacity: 0; }
+}
+@keyframes fb-reveal {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: none; }
+}
+@keyframes fb-bump {
+  0% { transform: scale(1); }
+  40% { transform: scale(1.28); }
+  100% { transform: scale(1); }
+}
+
+/* ---- Orchestrated page-load reveal ---- */
+.fb-status,
+.fb-topbar,
+.fb-comments,
+.fb-bottom {
+  animation: fb-reveal 0.55s both cubic-bezier(0.22, 1, 0.36, 1);
+}
+.fb-status { animation-delay: 0.05s; }
+.fb-topbar { animation-delay: 0.16s; }
+.fb-bottom { animation-delay: 0.28s; }
+.fb-comments { animation-delay: 0.4s; }
+.fb-likes[data-bump] { animation: fb-bump 0.4s ease; }
+
+/* ---- Responsive ----
+ * Phone-first fluid scaling. On narrow screens the centered top bar would
+ * collide with the top-left LIVE/viewer pills, so it drops onto its own full
+ * width row just below them. Sizes use clamp() so the UI scales continuously
+ * with viewport width rather than snapping at a single breakpoint. */
+@media (max-width: 680px) {
+  .fb-status { top: 12px; left: 12px; }
+
+  .fb-topbar {
+    top: 52px;
+    left: 12px;
+    right: 12px;
+    transform: none;
+    max-width: none;
+    border-radius: 14px;
+  }
+  .fb-name { font-size: clamp(13px, 3.6vw, 15px); }
+
+  /* Clear the taller top region (status row + identity bar). */
+  .fb-stage::before { height: 128px; }
+
+  .fb-comments {
+    left: 12px;
+    right: 12px;
+    width: auto;
+    bottom: clamp(120px, 30vw, 140px);
+    max-height: 38vh;
+  }
+  .fb-comment-body { font-size: clamp(12.5px, 3.4vw, 13.5px); }
+
+  .fb-reaction-lane { right: 8px; bottom: clamp(112px, 28vw, 130px); }
+
+  .fb-bottom { padding: 10px 12px calc(10px + env(safe-area-inset-bottom)); }
+  .fb-composer { width: 100%; }
+  .fb-actionbar { width: 100%; justify-content: space-around; }
+  .fb-action { padding: 10px 8px; font-size: clamp(12px, 3.4vw, 14px); }
+}
+
+/* Very narrow phones: hide action-button text-in-svg gaps get tight, so
+ * shrink the identity sub-line and reduce avatar size. */
+@media (max-width: 380px) {
+  .fb-avatar { width: 34px; height: 34px; font-size: 14px; }
+  .fb-sub { font-size: 11px; }
+  .fb-follow { padding: 7px 11px; font-size: 12px; }
+}
+
+/* Landscape phones / short viewports: pull overlays in so nothing stacks off
+ * screen when height is the constraint. */
+@media (max-height: 480px) and (orientation: landscape) {
+  .fb-topbar { top: 10px; left: auto; right: 12px; width: min(60vw, 360px); }
+  .fb-status { top: 10px; }
+  .fb-comments { max-height: 52vh; bottom: 104px; width: min(46vw, 340px); }
+  .fb-stage::after { height: 200px; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .fb-live-dot,
+  .fb-comment,
+  .fb-float,
+  .fb-status,
+  .fb-topbar,
+  .fb-comments,
+  .fb-bottom,
+  .fb-likes[data-bump] {
+    animation-duration: 0.01ms;
+    animation-iteration-count: 1;
+  }
+  .fb-float { opacity: 0; }
+}
