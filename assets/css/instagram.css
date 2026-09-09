@@ -1,0 +1,352 @@
+/* Instagram Live — mobile-first full-screen stream UI */
+
+body {
+  background: #000;
+  overflow: hidden;
+  height: 100dvh;
+}
+
+.ig-shell {
+  position: relative;
+  width: 100%;
+  max-width: 430px;
+  height: 100dvh;
+  margin: 0 auto;
+  overflow: hidden;
+  background: #000;
+}
+
+.ig-video {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transform: scaleX(-1);
+  z-index: 0;
+}
+
+.ig-camera-error {
+  display: none;
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  color: rgba(255,255,255,0.7);
+  font-size: 15px;
+  padding: 24px;
+  background: #111;
+}
+
+.ig-gradient {
+  position: absolute;
+  left: 0;
+  right: 0;
+  z-index: 1;
+  pointer-events: none;
+}
+
+.ig-gradient--top {
+  top: 0;
+  height: 220px;
+  background: linear-gradient(to bottom, rgba(0,0,0,0.7) 0%, transparent 100%);
+}
+
+.ig-gradient--bottom {
+  bottom: 0;
+  height: 280px;
+  background: linear-gradient(to top, rgba(0,0,0,0.78) 0%, transparent 100%);
+}
+
+/* TOP BAR */
+.ig-top {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 10;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 52px 14px 12px;
+}
+
+.ig-back {
+  background: none;
+  border: none;
+  padding: 6px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  opacity: 0.9;
+}
+
+.ig-identity {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex: 1;
+  min-width: 0;
+}
+
+/* Gradient ring avatar */
+.ig-avatar {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #833ab4, #fd1d1d, #fcb045);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  padding: 2.5px;
+}
+
+.ig-avatar-inner {
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
+  background: #2a2a2a;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  font-size: 15px;
+  color: #fff;
+  text-transform: uppercase;
+}
+
+.ig-names {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.ig-streamer {
+  font-size: 14px;
+  font-weight: 700;
+  color: #fff;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.ig-handle {
+  font-size: 11px;
+  color: rgba(255,255,255,0.65);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.ig-live-badge {
+  background: #e1306c;
+  color: #fff;
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  padding: 3px 8px;
+  border-radius: 5px;
+  flex-shrink: 0;
+}
+
+.ig-meta {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  flex-shrink: 0;
+  color: #fff;
+  font-size: 13px;
+}
+
+.ig-viewers {
+  font-weight: 600;
+}
+
+.ig-timer {
+  font-variant-numeric: tabular-nums;
+  font-size: 12px;
+  color: rgba(255,255,255,0.7);
+  margin-left: 4px;
+}
+
+/* COMMENTS */
+.ig-comments {
+  position: absolute;
+  left: 0;
+  right: 58px;
+  bottom: 80px;
+  z-index: 10;
+  padding: 0 14px 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+  max-height: 260px;
+  overflow: hidden;
+  -webkit-mask-image: linear-gradient(to bottom, transparent 0%, black 28%);
+  mask-image: linear-gradient(to bottom, transparent 0%, black 28%);
+}
+
+.ig-comment {
+  display: flex;
+  align-items: baseline;
+  gap: 5px;
+  animation: ig-comment-in 0.3s ease;
+}
+
+@keyframes ig-comment-in {
+  from { opacity: 0; transform: translateY(8px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+.ig-comment__name {
+  font-size: 13px;
+  font-weight: 700;
+  color: #fff;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.ig-comment__text {
+  font-size: 13px;
+  color: rgba(255,255,255,0.88);
+  word-break: break-word;
+}
+
+/* RIGHT SIDE ACTIONS */
+.ig-actions {
+  position: absolute;
+  right: 10px;
+  bottom: 100px;
+  z-index: 10;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 16px;
+}
+
+.ig-heart-btn {
+  background: none;
+  border: none;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  padding: 6px;
+  color: #fff;
+  transition: transform 0.12s ease;
+}
+
+.ig-heart-btn:active {
+  transform: scale(0.85);
+}
+
+.ig-heart-count {
+  font-size: 12px;
+  font-weight: 600;
+  color: #fff;
+}
+
+/* FLOATING HEARTS */
+.ig-hearts-stage {
+  position: absolute;
+  right: 18px;
+  bottom: 160px;
+  width: 50px;
+  height: 320px;
+  z-index: 20;
+  pointer-events: none;
+  overflow: visible;
+}
+
+.ig-float-heart {
+  position: absolute;
+  bottom: 0;
+  font-size: 26px;
+  animation: ig-float-up 1.6s ease-out forwards;
+}
+
+@keyframes ig-float-up {
+  0%   { transform: translateY(0) scale(1) rotate(0deg);       opacity: 1; }
+  40%  { transform: translateY(-120px) scale(1.2) rotate(-8deg); opacity: 0.95; }
+  80%  { transform: translateY(-230px) scale(1.0) rotate(6deg);  opacity: 0.5; }
+  100% { transform: translateY(-300px) scale(0.8) rotate(-4deg); opacity: 0; }
+}
+
+/* BOTTOM BAR */
+.ig-bottom {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  z-index: 10;
+  padding: 12px 14px calc(env(safe-area-inset-bottom, 0px) + 18px);
+}
+
+.ig-comment-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: rgba(255,255,255,0.14);
+  border: 1px solid rgba(255,255,255,0.22);
+  border-radius: 24px;
+  padding: 8px 8px 8px 16px;
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+}
+
+.ig-comment-input {
+  flex: 1;
+  background: none;
+  border: none;
+  outline: none;
+  color: #fff;
+  font-size: 14px;
+  font-family: inherit;
+  min-width: 0;
+}
+
+.ig-comment-input::placeholder {
+  color: rgba(255,255,255,0.5);
+}
+
+.ig-send-btn {
+  background: #e1306c;
+  border: none;
+  border-radius: 50%;
+  width: 34px;
+  height: 34px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  transition: background 0.15s, transform 0.1s;
+}
+
+.ig-send-btn:active {
+  background: #c0255a;
+  transform: scale(0.92);
+}
+
+/* Desktop: center the phone shell */
+@media (min-width: 431px) {
+  body {
+    background: #111;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 100dvh;
+    height: auto;
+    overflow: auto;
+  }
+
+  .ig-shell {
+    height: 844px;
+    max-height: 95dvh;
+    border-radius: 42px;
+    box-shadow: 0 24px 80px rgba(0,0,0,0.75);
+  }
+}
