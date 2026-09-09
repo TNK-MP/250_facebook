@@ -6,53 +6,164 @@
   <title>YouTube Live — GoLive</title>
   <link rel="stylesheet" href="../assets/css/base.css" />
   <link rel="stylesheet" href="../assets/css/stream-stub.css" />
-  <!--
-    ============================================================
-    YouTube Live — BUILD YOUR PLATFORM LOOK HERE
-    ------------------------------------------------------------
-    This is a working starter: the camera turns on and the
-    username / streamer name are wired up. Your job is to make
-    everything below LOOK like YouTube Live.
-
-    You own these files ONLY (no merge conflicts with others):
-      platforms/youtube.html
-      assets/js/platforms/youtube.js
-      assets/css/youtube.css   (create this and link it above)
-
-    Read data with:  const s = GoLive.session();
-                      s.username, s.streamer, s.platform
-    Start the cam:   GoLive.startCamera(videoEl)
-    See assets/js/platforms/youtube.js for the wiring.
-    ============================================================
-  -->
+  <link rel="stylesheet" href="../assets/css/youtube.css" />
 </head>
-<body>
-  <main class="stub">
-    <header class="stub__bar">
-      <span class="dot"></span>
-      <span class="stub__live">LIVE</span>
-      <span class="stub__platform" data-platform-name>YouTube Live</span>
-      <span class="stub__timer" data-timer>00:00</span>
-    </header>
+<body class="youtube-live">
+  <header class="yt-header">
+    <div class="yt-header__left">
+      <svg class="yt-logo" viewBox="0 0 24 24" fill="currentColor">
+        <path d="M23.498 6.186a3.016 3.016 0 0 0-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505A3.017 3.017 0 0 0 .502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 0 0 2.122 2.136c1.871.505 9.376.505 9.376.505s7.505 0 9.377-.505a3.015 3.015 0 0 0 2.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814zM9.545 15.568V8.432L15.818 12l-6.273 3.568z"/>
+      </svg>
+      <span class="yt-header__title">YouTube</span>
+    </div>
+    <div class="yt-header__center">
+      <h1 class="yt-stream-title" data-streamer>Streamer Name</h1>
+    </div>
+    <div class="yt-header__right">
+      <div class="yt-viewers">
+        <span class="yt-viewers__count" data-viewer-count>2,847</span>
+        <span class="yt-viewers__label">watching</span>
+      </div>
+      <div class="yt-live-badge">
+        <span class="yt-live-dot"></span>
+        <span class="yt-live-text">LIVE</span>
+        <span class="yt-timer" data-timer>02:34</span>
+      </div>
+    </div>
+  </header>
 
-    <section class="stub__stage">
-      <div class="stub__video-wrap">
-        <video data-camera autoplay muted playsinline></video>
-        <div class="stub__overlay">
-          <strong data-streamer>Streamer</strong>
-          <span data-username>@username</span>
+  <div class="yt-container">
+    <main class="yt-main">
+      <div class="yt-video-container">
+        <div class="yt-video-wrap">
+          <video data-camera autoplay muted playsinline class="yt-video"></video>
+          <div class="yt-camera-error" data-camera-error>
+            Camera unavailable. Allow camera access and reload.
+          </div>
+          <div class="yt-stream-info">
+            <div class="yt-streamer-badge">
+              <div class="yt-avatar" data-streamer-avatar>
+                <span data-username>@user</span>
+              </div>
+              <div class="yt-streamer-info">
+                <strong data-streamer>Streamer Name</strong>
+                <span class="yt-subscriber-count" data-subscriber-count>125K subscribers</span>
+              </div>
+              <button class="yt-subscribe-btn">Subscribe</button>
+            </div>
+          </div>
         </div>
-        <div class="stub__camera-error" data-camera-error>
-          Camera unavailable. Allow camera access and reload.
+
+        <div class="yt-details">
+          <div class="yt-details__section">
+            <h2>About this stream</h2>
+            <p class="yt-description">🔴 LIVE NOW! Join us for an amazing broadcast! Thanks for being here and supporting the channel. Don't forget to subscribe and turn on notifications so you never miss a stream!</p>
+          </div>
         </div>
       </div>
-    </section>
+    </main>
 
-    <footer class="stub__todo">
-      TODO: replace this placeholder with the real YouTube Live interface —
-      edit <code>platforms/youtube.html</code> and <code>assets/css/youtube.css</code>.
-    </footer>
-  </main>
+    <aside class="yt-chat-sidebar">
+      <div class="yt-chat-header">
+        <h3>Live chat</h3>
+        <button class="yt-chat-settings">⋮</button>
+      </div>
+      <div class="yt-chat-messages" data-chat-container>
+        <div class="yt-chat-message">
+          <div class="yt-message-avatar" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);">TG</div>
+          <div class="yt-message-content">
+            <span class="yt-message-author">TechGuru2024</span>
+            <span class="yt-message-text">Awesome stream! Love the energy today 🔥</span>
+          </div>
+        </div>
+        <div class="yt-chat-message">
+          <div class="yt-message-avatar" style="background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);">SF</div>
+          <div class="yt-message-content">
+            <span class="yt-message-author">StreamFan99</span>
+            <span class="yt-message-text">Been watching since the beginning!</span>
+          </div>
+        </div>
+        <div class="yt-chat-message">
+          <div class="yt-message-avatar" style="background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);">CV</div>
+          <div class="yt-message-content">
+            <span class="yt-message-author">CoolVibes</span>
+            <span class="yt-message-text">This is fire 🎉🔥</span>
+          </div>
+        </div>
+        <div class="yt-chat-message">
+          <div class="yt-message-avatar" style="background: linear-gradient(135deg, #fa709a 0%, #fee140 100%);">PP</div>
+          <div class="yt-message-content">
+            <span class="yt-message-author">ProPlayer_</span>
+            <span class="yt-message-text">First time here, so good!</span>
+          </div>
+        </div>
+        <div class="yt-chat-message">
+          <div class="yt-message-avatar" style="background: linear-gradient(135deg, #30cfd0 0%, #330867 100%);">ML</div>
+          <div class="yt-message-content">
+            <span class="yt-message-author">MusicLover_</span>
+            <span class="yt-message-text">The vibes are immaculate 💯</span>
+          </div>
+        </div>
+        <div class="yt-chat-message">
+          <div class="yt-message-avatar" style="background: linear-gradient(135deg, #a8edea 0%, #fed6e3 100%);">HW</div>
+          <div class="yt-message-content">
+            <span class="yt-message-author">HappyWatcher</span>
+            <span class="yt-message-text">Keep it up!</span>
+          </div>
+        </div>
+        <div class="yt-chat-message">
+          <div class="yt-message-avatar" style="background: linear-gradient(135deg, #ff9a56 0%, #ff6a88 100%);">SK</div>
+          <div class="yt-message-content">
+            <span class="yt-message-author">StreamKing</span>
+            <span class="yt-message-text">Following! This is quality content</span>
+          </div>
+        </div>
+        <div class="yt-chat-message">
+          <div class="yt-message-avatar" style="background: linear-gradient(135deg, #2e2e78 0%, #662d91 100%);">SV</div>
+          <div class="yt-message-content">
+            <span class="yt-message-author">SilentViewer</span>
+            <span class="yt-message-text">Amazing! 🌟</span>
+          </div>
+        </div>
+        <div class="yt-chat-message">
+          <div class="yt-message-avatar" style="background: linear-gradient(135deg, #eb3349 0%, #f45c43 100%);">CB</div>
+          <div class="yt-message-content">
+            <span class="yt-message-author">CommunityVibe</span>
+            <span class="yt-message-text">Love this community!</span>
+          </div>
+        </div>
+        <div class="yt-chat-message">
+          <div class="yt-message-avatar" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);">DD</div>
+          <div class="yt-message-content">
+            <span class="yt-message-author">DayDreamer</span>
+            <span class="yt-message-text">This hit different today! 💪</span>
+          </div>
+        </div>
+        <div class="yt-chat-message">
+          <div class="yt-message-avatar" style="background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);">NO</div>
+          <div class="yt-message-content">
+            <span class="yt-message-author">NightOwl_23</span>
+            <span class="yt-message-text">Can't stop watching!</span>
+          </div>
+        </div>
+        <div class="yt-chat-message">
+          <div class="yt-message-avatar" style="background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);">AU</div>
+          <div class="yt-message-content">
+            <span class="yt-message-author">ActiveUser88</span>
+            <span class="yt-message-text">You're killing it! 👏</span>
+          </div>
+        </div>
+      </div>
+      <div class="yt-chat-input-wrapper">
+        <input
+          type="text"
+          class="yt-chat-input"
+          placeholder="Send a message..."
+          aria-label="Chat message input"
+        />
+      </div>
+    </aside>
+  </div>
 
   <script src="../assets/js/platforms.js"></script>
   <script src="../assets/js/stream-session.js"></script>
