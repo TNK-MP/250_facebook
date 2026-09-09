@@ -5,54 +5,237 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Kick — GoLive</title>
   <link rel="stylesheet" href="../assets/css/base.css" />
-  <link rel="stylesheet" href="../assets/css/stream-stub.css" />
-  <!--
-    ============================================================
-    Kick — BUILD YOUR PLATFORM LOOK HERE
-    ------------------------------------------------------------
-    This is a working starter: the camera turns on and the
-    username / streamer name are wired up. Your job is to make
-    everything below LOOK like Kick.
-
-    You own these files ONLY (no merge conflicts with others):
-      platforms/kick.html
-      assets/js/platforms/kick.js
-      assets/css/kick.css   (create this and link it above)
-
-    Read data with:  const s = GoLive.session();
-                      s.username, s.streamer, s.platform
-    Start the cam:   GoLive.startCamera(videoEl)
-    See assets/js/platforms/kick.js for the wiring.
-    ============================================================
-  -->
+  <link rel="stylesheet" href="../assets/css/kick.css" />
 </head>
 <body>
-  <main class="stub">
-    <header class="stub__bar">
-      <span class="dot"></span>
-      <span class="stub__live">LIVE</span>
-      <span class="stub__platform" data-platform-name>Kick</span>
-      <span class="stub__timer" data-timer>00:00</span>
+  <div class="kick">
+
+    <!-- ============================================================ top bar -->
+    <header class="topbar">
+      <a class="topbar__logo" href="../index.html">
+        <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
+          <path d="M5 4v16M5 12l6-8M5 12l6 8" stroke="currentColor" stroke-width="2.4"
+                stroke-linecap="round" stroke-linejoin="round"/>
+          <path d="M14 4h5v5M14 20h5v-5" stroke="currentColor" stroke-width="2.4"
+                stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+        KICK
+      </a>
+
+      <nav class="topbar__nav" aria-label="Primary">
+        <a href="#" aria-current="page">Following</a>
+        <a href="#">Browse</a>
+        <a href="#">Categories</a>
+      </nav>
+
+      <div class="topbar__search">
+        <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
+          <circle cx="11" cy="11" r="7" stroke="currentColor" stroke-width="2"/>
+          <path d="M16.5 16.5L21 21" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+        </svg>
+        <label class="visually-hidden" for="kick-search">Search channels</label>
+        <input id="kick-search" type="search" placeholder="Search channels and categories" />
+      </div>
+
+      <div class="topbar__actions">
+        <button class="icon-btn" type="button" aria-label="Notifications">
+          <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
+            <path d="M18 8a6 6 0 10-12 0c0 6-2 7-2 7h16s-2-1-2-7z" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/>
+            <path d="M10.5 20a2 2 0 003 0" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+          </svg>
+        </button>
+        <button class="icon-btn" type="button" aria-label="Get bits">
+          <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
+            <path d="M13 2L4 14h6l-1 8 9-12h-6l1-8z" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/>
+          </svg>
+        </button>
+        <span class="topbar__me" data-avatar-initial aria-hidden="true">?</span>
+      </div>
     </header>
 
-    <section class="stub__stage">
-      <div class="stub__video-wrap">
+    <!-- ========================================================= left rail -->
+    <aside class="rail" aria-label="Channels">
+      <h2 class="rail__heading">Followed channels</h2>
+      <ul class="rail__list" data-rail-following>
+        <!-- The live channel (this one) is injected first by kick.js -->
+      </ul>
+
+      <h2 class="rail__heading">Recommended</h2>
+      <ul class="rail__list" data-rail-recommended></ul>
+    </aside>
+
+    <!-- ======================================================= main column -->
+    <main class="main">
+      <section class="player">
         <video data-camera autoplay muted playsinline></video>
-        <div class="stub__overlay">
-          <strong data-streamer>Streamer</strong>
-          <span data-username>@username</span>
+
+        <div class="player__badges">
+          <span class="badge-live">LIVE</span>
+          <span class="badge-dark">
+            <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
+              <circle cx="12" cy="12" r="3.2" stroke="currentColor" stroke-width="2"/>
+              <path d="M2 12s3.6-6 10-6 10 6 10 6-3.6 6-10 6-10-6-10-6z" stroke="currentColor" stroke-width="2"/>
+            </svg>
+            <span data-viewers>0</span>
+          </span>
         </div>
-        <div class="stub__camera-error" data-camera-error>
-          Camera unavailable. Allow camera access and reload.
+
+        <span class="badge-dark player__timer" data-timer>00:00</span>
+
+        <div class="player__controls">
+          <button class="icon-btn" type="button" aria-label="Pause">
+            <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
+              <path d="M9 5v14M15 5v14" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+            </svg>
+          </button>
+          <button class="icon-btn" type="button" data-mute aria-label="Unmute" aria-pressed="true">
+            <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
+              <path d="M4 9h4l5-4v14l-5-4H4V9z" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/>
+              <path d="M17 9l4 6M21 9l-4 6" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+            </svg>
+          </button>
+          <label class="visually-hidden" for="kick-volume">Volume</label>
+          <input class="player__volume" id="kick-volume" type="range" min="0" max="100" value="0" />
+
+          <span class="player__spacer"></span>
+          <span class="player__quality">1080p60</span>
+          <button class="icon-btn" type="button" aria-label="Settings">
+            <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
+              <circle cx="12" cy="12" r="3" stroke="currentColor" stroke-width="2"/>
+              <path d="M12 2v3M12 19v3M2 12h3M19 12h3M4.9 4.9l2.1 2.1M17 17l2.1 2.1M19.1 4.9L17 7M7 17l-2.1 2.1"
+                    stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+            </svg>
+          </button>
+          <button class="icon-btn" type="button" data-fullscreen aria-label="Fullscreen">
+            <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
+              <path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5" stroke="currentColor" stroke-width="2"
+                    stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+          </button>
         </div>
-      </div>
+
+        <div class="player__error" data-camera-error>
+          <p>
+            <strong>Camera unavailable</strong>
+            Allow camera access and reload. The page must be served over
+            localhost or HTTPS.
+          </p>
+        </div>
+      </section>
+
+      <!-- channel info under the player -->
+      <section class="channel">
+        <div class="channel__row">
+          <div class="channel__avatar" data-avatar-initial aria-hidden="true">?</div>
+
+          <div class="channel__info">
+            <h1 class="channel__name">
+              <span data-streamer>Streamer</span>
+              <svg class="channel__verified" viewBox="0 0 24 24" fill="none" aria-label="Verified">
+                <path d="M12 2l2.4 1.8 3-.2.9 2.9 2.5 1.7-1.2 2.8 1.2 2.8-2.5 1.7-.9 2.9-3-.2L12 22l-2.4-1.8-3 .2-.9-2.9L3.2 15.8 4.4 13 3.2 10.2l2.5-1.7.9-2.9 3 .2L12 2z"
+                      fill="currentColor"/>
+                <path d="M8.5 12.2l2.4 2.3 4.6-4.8" stroke="#0b0e0f" stroke-width="2"
+                      stroke-linecap="round" stroke-linejoin="round"/>
+              </svg>
+            </h1>
+            <p class="channel__title" data-stream-title>Live now</p>
+            <div class="channel__tags">
+              <span class="tag tag--category">Just Chatting</span>
+              <span class="tag">English</span>
+              <span class="tag">IRL</span>
+              <span class="tag">Drops enabled</span>
+            </div>
+          </div>
+
+          <div class="channel__actions">
+            <button class="btn btn--follow" type="button" data-follow aria-pressed="false">
+              <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                <path d="M12 20s-7-4.4-7-9a4 4 0 017-2.6A4 4 0 0119 11c0 4.6-7 9-7 9z"
+                      stroke="currentColor" stroke-width="2" stroke-linejoin="round"/>
+              </svg>
+              <span data-follow-label>Follow</span>
+            </button>
+            <button class="btn btn--sub" type="button" data-subscribe>
+              <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                <path d="M12 3l2.6 5.3 5.9.9-4.3 4.1 1 5.8-5.2-2.7-5.2 2.7 1-5.8L3.5 9.2l5.9-.9L12 3z"
+                      stroke="currentColor" stroke-width="2" stroke-linejoin="round"/>
+              </svg>
+              Subscribe
+            </button>
+            <button class="icon-btn" type="button" aria-label="Share">
+              <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                <circle cx="18" cy="5" r="3" stroke="currentColor" stroke-width="2"/>
+                <circle cx="6" cy="12" r="3" stroke="currentColor" stroke-width="2"/>
+                <circle cx="18" cy="19" r="3" stroke="currentColor" stroke-width="2"/>
+                <path d="M8.6 10.6l6.8-4.2M8.6 13.4l6.8 4.2" stroke="currentColor" stroke-width="2"/>
+              </svg>
+            </button>
+            <button class="icon-btn" type="button" aria-label="More options">
+              <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                <circle cx="5" cy="12" r="1.8" fill="currentColor"/>
+                <circle cx="12" cy="12" r="1.8" fill="currentColor"/>
+                <circle cx="19" cy="12" r="1.8" fill="currentColor"/>
+              </svg>
+            </button>
+          </div>
+        </div>
+
+        <div class="channel__stats">
+          <div class="stat">
+            <span class="stat__value" data-followers>0</span>
+            <span class="stat__label">Followers</span>
+          </div>
+          <div class="stat">
+            <span class="stat__value" data-viewers>0</span>
+            <span class="stat__label">Watching</span>
+          </div>
+          <div class="stat">
+            <span class="stat__value" data-username>@username</span>
+            <span class="stat__label">Handle</span>
+          </div>
+          <div class="stat">
+            <span class="stat__value" data-timer>00:00</span>
+            <span class="stat__label">Uptime</span>
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <!-- ============================================================== chat -->
+    <section class="chat" aria-label="Stream chat">
+      <header class="chat__header">
+        <span class="chat__title">Stream Chat</span>
+        <span class="chat__count"><span data-chatters>0</span> chatting</span>
+        <button class="icon-btn" type="button" aria-label="Chat settings">
+          <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
+            <circle cx="12" cy="12" r="3" stroke="currentColor" stroke-width="2"/>
+            <path d="M12 2v3M12 19v3M2 12h3M19 12h3" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+          </svg>
+        </button>
+      </header>
+
+      <div class="chat__log" data-chat-log role="log" aria-live="polite" aria-relevant="additions"></div>
+
+      <form class="chat__compose" data-chat-form>
+        <div class="chat__box">
+          <label class="visually-hidden" for="kick-chat-input">Send a message</label>
+          <input id="kick-chat-input" type="text" maxlength="200" autocomplete="off"
+                 placeholder="Send a message..." data-chat-input />
+          <button class="icon-btn" type="button" data-emote aria-label="Insert emote">
+            <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
+              <circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="2"/>
+              <path d="M8.5 14a4.2 4.2 0 007 0" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+              <circle cx="9" cy="10" r="1.1" fill="currentColor"/>
+              <circle cx="15" cy="10" r="1.1" fill="currentColor"/>
+            </svg>
+          </button>
+          <button class="chat__send" type="submit">Chat</button>
+        </div>
+        <p class="chat__footnote">Be nice. Simulated chat — nobody is really watching.</p>
+      </form>
     </section>
 
-    <footer class="stub__todo">
-      TODO: replace this placeholder with the real Kick interface —
-      edit <code>platforms/kick.html</code> and <code>assets/css/kick.css</code>.
-    </footer>
-  </main>
+  </div>
 
   <script src="../assets/js/platforms.js"></script>
   <script src="../assets/js/stream-session.js"></script>
