@@ -234,8 +234,26 @@
     }
   }
 
+  // Long-press opens the picker on touch (where :hover doesn't exist); a plain
+  // tap toggles the Like. The press timer sets a flag so the ensuing click
+  // doesn't also fire the toggle.
+  var pressTimer = null;
+  var openedByPress = false;
+  function openPicker() { if (picker) picker.classList.add("is-open"); }
+  function closePicker() { if (picker) picker.classList.remove("is-open"); }
+
   if (likeBtn) {
+    likeBtn.addEventListener("pointerdown", function () {
+      openedByPress = false;
+      pressTimer = setTimeout(function () { openedByPress = true; openPicker(); }, 350);
+    });
+    var cancelPress = function () { clearTimeout(pressTimer); };
+    likeBtn.addEventListener("pointerup", cancelPress);
+    likeBtn.addEventListener("pointerleave", cancelPress);
+    likeBtn.addEventListener("pointercancel", cancelPress);
+
     likeBtn.addEventListener("click", function () {
+      if (openedByPress) { openedByPress = false; return; } // press opened picker
       if (liked) { // toggle off
         liked = false;
         likeBtn.classList.remove("is-active");
@@ -250,8 +268,12 @@
     $$("[data-reaction]", picker).forEach(function (btn) {
       btn.addEventListener("click", function () {
         setReaction(btn.getAttribute("data-reaction"));
-        picker.classList.remove("is-open");
+        closePicker();
       });
+    });
+    // Dismiss an open picker when tapping/clicking anywhere else.
+    document.addEventListener("pointerdown", function (e) {
+      if (!picker.contains(e.target) && !likeBtn.contains(e.target)) closePicker();
     });
   }
 

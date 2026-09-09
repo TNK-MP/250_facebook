@@ -384,13 +384,59 @@
   100% { transform: translate(var(--x3, -4px), -100%) scale(0.9); opacity: 0; }
 }
 
-/* ---- Responsive ---- */
-@media (max-width: 640px) {
-  .fb-topbar { max-width: 78vw; }
-  .fb-comments { width: 72vw; bottom: 132px; }
+/* ---- Responsive ----
+ * Phone-first fluid scaling. On narrow screens the centered top bar would
+ * collide with the top-left LIVE/viewer pills, so it drops onto its own full
+ * width row just below them. Sizes use clamp() so the UI scales continuously
+ * with viewport width rather than snapping at a single breakpoint. */
+@media (max-width: 680px) {
+  .fb-status { top: 12px; left: 12px; }
+
+  .fb-topbar {
+    top: 52px;
+    left: 12px;
+    right: 12px;
+    transform: none;
+    max-width: none;
+    border-radius: 14px;
+  }
+  .fb-name { font-size: clamp(13px, 3.6vw, 15px); }
+
+  /* Clear the taller top region (status row + identity bar). */
+  .fb-stage::before { height: 128px; }
+
+  .fb-comments {
+    left: 12px;
+    right: 12px;
+    width: auto;
+    bottom: clamp(120px, 30vw, 140px);
+    max-height: 38vh;
+  }
+  .fb-comment-body { font-size: clamp(12.5px, 3.4vw, 13.5px); }
+
+  .fb-reaction-lane { right: 8px; bottom: clamp(112px, 28vw, 130px); }
+
+  .fb-bottom { padding: 10px 12px calc(10px + env(safe-area-inset-bottom)); }
   .fb-composer { width: 100%; }
-  .fb-actionbar { width: 100%; justify-content: space-between; }
-  .fb-action { padding: 9px 10px; }
+  .fb-actionbar { width: 100%; justify-content: space-around; }
+  .fb-action { padding: 10px 8px; font-size: clamp(12px, 3.4vw, 14px); }
+}
+
+/* Very narrow phones: hide action-button text-in-svg gaps get tight, so
+ * shrink the identity sub-line and reduce avatar size. */
+@media (max-width: 380px) {
+  .fb-avatar { width: 34px; height: 34px; font-size: 14px; }
+  .fb-sub { font-size: 11px; }
+  .fb-follow { padding: 7px 11px; font-size: 12px; }
+}
+
+/* Landscape phones / short viewports: pull overlays in so nothing stacks off
+ * screen when height is the constraint. */
+@media (max-height: 480px) and (orientation: landscape) {
+  .fb-topbar { top: 10px; left: auto; right: 12px; width: min(60vw, 360px); }
+  .fb-status { top: 10px; }
+  .fb-comments { max-height: 52vh; bottom: 104px; width: min(46vw, 340px); }
+  .fb-stage::after { height: 200px; }
 }
 
 @media (prefers-reduced-motion: reduce) {
