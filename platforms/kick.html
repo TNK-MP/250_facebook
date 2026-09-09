@@ -107,14 +107,19 @@
       <!-- shown only while watching somebody else's channel -->
       <div class="viewing" data-viewing-bar hidden>
         <span class="viewing__text">
-          You're watching <strong data-viewing-name></strong>. Your own stream is still live.
+          You're watching <strong data-viewing-name></strong> live on Kick. Your own stream is still live.
         </span>
+        <button class="viewing__mode" type="button" data-feed-mode>Show simulated feed</button>
         <button class="viewing__back" type="button" data-go-self>Back to my channel</button>
       </div>
 
       <section class="player" data-player>
         <video data-camera autoplay muted playsinline></video>
-        <!-- stands in for another streamer's feed; your own channel uses the camera -->
+        <!-- another streamer's real Kick feed (their player, their audio) -->
+        <iframe class="player__embed" data-embed hidden title="Live stream"
+                allow="autoplay; fullscreen; encrypted-media; picture-in-picture"
+                referrerpolicy="strict-origin-when-cross-origin" allowfullscreen></iframe>
+        <!-- offline/no-network fallback for another streamer; your channel uses the camera -->
         <canvas class="player__sim" data-sim hidden aria-label="Simulated stream"></canvas>
 
         <div class="player__badges">

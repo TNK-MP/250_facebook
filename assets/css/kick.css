@@ -303,6 +303,27 @@ body {
   height: 100%;
 }
 
+.player__embed {
+  position: absolute;
+  inset: 0;
+  display: block;
+  width: 100%;
+  height: 100%;
+  border: 0;
+}
+
+.player__embed[hidden] {
+  display: none;
+}
+
+/* A cross-origin player can't be driven from here, and our overlays would
+   swallow its clicks — so hand the whole surface over to it. */
+.player--embed .player__badges,
+.player--embed .player__timer,
+.player--embed .player__controls {
+  display: none;
+}
+
 .player__badges {
   position: absolute;
   top: 14px;
@@ -1192,8 +1213,24 @@ body {
   color: #cfd3d6;
 }
 
-.viewing__back {
+.viewing__mode {
   margin-left: auto;
+  height: 30px;
+  padding: 0 12px;
+  border: 1px solid var(--kick-border);
+  border-radius: 6px;
+  background: var(--kick-elev);
+  color: var(--kick-text);
+  font-family: inherit;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.viewing__mode:hover {
+  border-color: var(--kick-green);
+}
+
+.viewing__back {
   height: 30px;
   padding: 0 12px;
   border: 0;

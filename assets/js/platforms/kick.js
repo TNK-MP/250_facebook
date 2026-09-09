@@ -78,19 +78,22 @@
       `demo channel — the video is your own webcam and the chat is simulated.`,
   };
 
+  // `slug` is the real kick.com channel, used to embed their live player.
+  // The follower/viewer/title values are placeholders: Kick's channel API
+  // sends no CORS header, so the browser can't read the real ones from here.
   const OTHERS = [
-    { name: "xQc", game: "Just Chatting", title: "JUICER KING | !prime !socials", followers: 2600000, viewers: 48200, verified: true, following: true },
-    { name: "Amouranth", game: "IRL", title: "hot tub stream :: !socials", followers: 1450000, viewers: 12800, verified: true, following: true },
-    { name: "Trainwreckstv", game: "Slots", title: "late night gambling talk", followers: 1100000, viewers: 9400, verified: true, following: true },
-    { name: "AdinRoss", game: "Just Chatting", title: "BIG ANNOUNCEMENT TODAY", followers: 1900000, viewers: 31500, verified: true, following: true },
-    { name: "Nickmercs", game: "Warzone", title: "MFAM grind — ranked push", followers: 860000, viewers: 7300, verified: true, following: false },
-    { name: "Destiny", game: "Politics", title: "debate night, calling in guests", followers: 410000, viewers: 4100, verified: false, following: false },
-    { name: "kaicenat", game: "Just Chatting", title: "MAFIATHON — day 12", followers: 2200000, viewers: 62700, verified: true, following: false },
-    { name: "iceposeidon", game: "IRL", title: "walking around downtown", followers: 520000, viewers: 2800, verified: false, following: false },
+    { name: "xQc", slug: "xqc", game: "Just Chatting", title: "JUICER KING | !prime !socials", followers: 2600000, viewers: 48200, verified: true, following: true },
+    { name: "Amouranth", slug: "amouranth", game: "IRL", title: "hot tub stream :: !socials", followers: 1450000, viewers: 12800, verified: true, following: true },
+    { name: "Trainwreckstv", slug: "trainwreckstv", game: "Slots", title: "late night gambling talk", followers: 1100000, viewers: 9400, verified: true, following: true },
+    { name: "AdinRoss", slug: "adinross", game: "Just Chatting", title: "BIG ANNOUNCEMENT TODAY", followers: 1900000, viewers: 31500, verified: true, following: true },
+    { name: "Nickmercs", slug: "nickmercs", game: "Warzone", title: "MFAM grind — ranked push", followers: 860000, viewers: 7300, verified: true, following: false },
+    { name: "Destiny", slug: "destiny", game: "Politics", title: "debate night, calling in guests", followers: 410000, viewers: 4100, verified: false, following: false },
+    { name: "kaicenat", slug: "kaicenat", game: "Just Chatting", title: "MAFIATHON — day 12", followers: 2200000, viewers: 62700, verified: true, following: false },
+    { name: "iceposeidon", slug: "iceposeidon", game: "IRL", title: "walking around downtown", followers: 520000, viewers: 2800, verified: false, following: false },
   ];
 
   OTHERS.forEach((c) => {
-    c.handle = handleFor(c.name);
+    c.handle = c.slug || handleFor(c.name);
     c.self = false;
     c.bio =
       `${c.name} streams ${c.game} on Kick. Follow the channel to get a ` +
@@ -347,6 +350,73 @@
     }, 60);
   });
 
+  /* ------------------------------------------------------ the real Kick feed
+   *
+   * Other channels load their actual Kick player in an iframe, so you see and
+   * hear the live stream. player.kick.com sends no X-Frame-Options or CSP, so
+   * framing is allowed. If the network is down (or you switch to it manually)
+   * the canvas feed above stands in instead.
+   */
+
+  const embed = $("[data-embed]");
+  let feedMode = "real"; // "real" | "sim"
+
+  const embedActive = () => !!(embed && !embed.hidden);
+
+  function showEmbed(ch) {
+    if (!embed) return;
+    hideSim();
+    if (video) video.hidden = true;
+    embed.hidden = false;
+    const src =
+      "https://player.kick.com/" + encodeURIComponent(ch.slug) + "?autoplay=true&muted=false";
+    if (embed.src !== src) embed.src = src;
+    if (playerEl) playerEl.classList.add("player--embed");
+  }
+
+  function hideEmbed() {
+    if (!embed) return;
+    embed.hidden = true;
+    // dropping the src stops the stream and its audio, rather than leaving it
+    // playing behind a hidden element
+    if (embed.src && embed.src !== "about:blank") embed.src = "about:blank";
+    if (playerEl) playerEl.classList.remove("player--embed");
+  }
+
+  /** Point the player at whatever this channel should show. */
+  function applyFeed(ch) {
+    if (ch.self) {
+      hideEmbed();
+      hideSim();
+    } else if (feedMode === "real" && ch.slug && navigator.onLine !== false) {
+      showEmbed(ch);
+    } else {
+      hideEmbed();
+      showSim(ch);
+    }
+    syncCameraError();
+    setPaused(false);
+  }
+
+  const feedModeBtn = $("[data-feed-mode]");
+
+  function paintFeedModeBtn() {
+    if (!feedModeBtn) return;
+    feedModeBtn.textContent =
+      feedMode === "real" ? "Show simulated feed" : "Show real stream";
+  }
+
+  if (feedModeBtn) {
+    feedModeBtn.addEventListener("click", () => {
+      feedMode = feedMode === "real" ? "sim" : "real";
+      paintFeedModeBtn();
+      if (current && !current.self) applyFeed(current); // swap without resetting chat
+      toast(feedMode === "real" ? "Showing the real Kick stream" : "Showing the simulated feed");
+    });
+  }
+
+  paintFeedModeBtn();
+
   /* --------------------------------------------------------- count painting */
 
   const viewerEls = $$("[data-viewers]");
@@ -424,11 +494,8 @@
       }
     });
 
-    // swap the feed: your own channel is the webcam, everyone else is canvas
-    if (ch.self) hideSim();
-    else showSim(ch);
-    syncCameraError();
-    setPaused(false); // a fresh channel always starts playing
+    // your channel is the webcam; everyone else is their real Kick player
+    applyFeed(ch);
 
     counter = GoLive.startViewerCount(null, { start: ch.viewers, interval: 2500 });
     paintCounts();
@@ -837,7 +904,9 @@
   /** Pause/resume whichever feed is on screen — the webcam or the canvas. */
   function setPaused(next) {
     isPaused = next;
-    if (simChannel) {
+    if (embedActive()) {
+      // Kick's own player owns play/pause and volume for a real stream.
+    } else if (simChannel) {
       if (next) simHalt();
       else simRun();
     } else if (video) {
