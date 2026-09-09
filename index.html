@@ -34,6 +34,14 @@
       </div>
 
       <div class="field">
+        <label for="viewers">Starting viewers</label>
+        <input type="number" id="viewers" name="viewers" min="0" max="100000000"
+               step="1" placeholder="e.g. 1200" value="1200" />
+        <p class="hint">How many viewers you go live with. It keeps climbing while you stream.</p>
+        <p class="error" data-error-for="viewers" role="alert"></p>
+      </div>
+
+      <div class="field">
         <label id="platform-label">Choose a platform look</label>
         <div class="platforms" role="radiogroup" aria-labelledby="platform-label">
           <!-- Populated by landing.js from the shared PLATFORMS registry -->

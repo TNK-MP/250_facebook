@@ -47,6 +47,14 @@
       icon:
         '<svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M14 8h2V5h-2c-1.7 0-3 1.3-3 3v2H9v3h2v6h3v-6h2.2l.8-3H14V8z" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/></svg>',
     },
+    {
+      id: "tiktok",
+      name: "TikTok LIVE",
+      page: "platforms/tiktok.html",
+      color: "#fe2c55",
+      icon:
+        '<svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M14 3c.3 2.3 1.9 4.1 4 4.4v2.6c-1.5 0-2.9-.5-4-1.3v5.8a5.5 5.5 0 1 1-5.5-5.5c.3 0 .6 0 .9.1v2.7a2.8 2.8 0 1 0 2 2.7V3h2.6z" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/></svg>',
+    },
   ];
 
   const byId = (id) => PLATFORMS.find((p) => p.id === id) || null;
